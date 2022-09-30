@@ -182,10 +182,18 @@ def make_brick(studs_x, studs_y, plate_z):
     # brick is finished, so create a compound object with the name of the brick
     obj = doc.addObject("Part::Compound", brick_name)
     obj.Links = compound_list
+    #
+    # Step 5:
+    #
+    # upload .stl file
+    doc.recompute()
+    export = []
+    export.append(doc.getObject(brick_name))
+    Mesh.export(export, u"/home/paul/FreeCAD models/brick_python/" + brick_name + ".stl")
     # clean up
     doc.removeObject("ring_template")
-    #doc.recompute()
-    return obj
+    #return obj
+
 
 """
 def create_brick_series(studs_x, studs_y_max):
