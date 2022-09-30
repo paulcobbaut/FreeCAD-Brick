@@ -4,7 +4,7 @@ The goal is to make Lego-compatible pieces for use in 3D printer
 The script is able to generate .stl files directly.
 """
 # Dimensions for studs
-stud_radius_mm		= 2.471
+stud_radius_mm		= 2.475
 stud_center_spacing_mm	= 8.000
 stud_height_mm		= 1.700
 
@@ -23,8 +23,8 @@ brick_width_mm		= 7.800		# = plate_width_mm
 wall_thickness_mm	= 1.600	
 
 # Dimensions underside rings
-ring_radius_outer_mm	= 3.226
-ring_radius_inner_mm	= 2.370
+ring_radius_outer_mm	= 3.256
+ring_radius_inner_mm	= 2.456
 brick_ring_height_mm	= 8.000
 plate_ring_height_mm	= 1.600
 
@@ -63,47 +63,9 @@ def make_stud(name):
     doc.recompute()
     return obj
 
-# the brick ring template is always copied
-def make_brick_ring_template(name):
-    outer_cylinder = doc.addObject("Part::Cylinder", "outer_cylinder")
-    outer_cylinder.Radius = ring_radius_outer_mm
-    outer_cylinder.Height = brick_ring_height_mm
-    inner_cylinder = doc.addObject("Part::Cylinder", "inner_cylinder")
-    inner_cylinder.Radius = ring_radius_inner_mm
-    inner_cylinder.Height = brick_ring_height_mm
-    ring = doc.addObject('Part::Cut', name)
-    ring.Base = outer_cylinder
-    ring.Tool = inner_cylinder
-    doc.recompute()
-    #outer_cylinder.ViewObject.hide()
-    #inner_cylinder.ViewObject.hide()
-    return ring
-
-# the plate ring template is always copied
-def make_plate_ring_template(name):
-    outer_cylinder = doc.addObject("Part::Cylinder", "outer_cylinder")
-    outer_cylinder.Radius = ring_radius_outer_mm
-    outer_cylinder.Height = plate_ring_height_mm
-    inner_cylinder = doc.addObject("Part::Cylinder", "inner_cylinder")
-    inner_cylinder.Radius = ring_radius_inner_mm
-    inner_cylinder.Height = plate_ring_height_mm
-    ring = doc.addObject('Part::Cut', name)
-    ring.Base = outer_cylinder
-    ring.Tool = inner_cylinder
-    doc.recompute()
-    #outer_cylinder.ViewObject.hide()
-    #inner_cylinder.ViewObject.hide()
-    return ring
-
 # creating the templates
 stud_template = make_stud("stud_template")
 stud_template.ViewObject.hide()
-
-brick_ring_template = make_brick_ring_template("brick_ring_template")
-brick_ring_template.ViewObject.hide()
-
-plate_ring_template = make_plate_ring_template("plate_ring_template")
-plate_ring_template.ViewObject.hide()
 
 
 ###
@@ -126,27 +88,27 @@ plate_ring_template.ViewObject.hide()
 # always put the smallest digit first!
 ###
 def make_brick(studs_x, studs_y, plate_z):
-    # Exit with error if studs_y is smaller than studs_x
+    #
+    # Error handling
+    #
+    # Exit if studs_y is smaller than studs_x
     if studs_y < studs_x:
         print('ERROR: make_brick(): studs_y (', studs_y, ') cannot be smaller than studs_x (', studs_x, ')')
         return
-    # Exit with error if plate_z is not 1 and not a multiple of 3
-    if plate_z % 3 != 0 and plate_z != 1:
-        print('ERROR: make_brick(): plate_z (', plate_z, ') must be 1 or a multiple of 3')
-        return
+    #
     # Name this brick or plate using sizes
-    if plate_z == 1:
-        brick_name = 'plate_' + str(studs_x) + 'x' + str(studs_y)
-    else:
+    #
+    if plate_z % 3 == 0:		# multiples of 3 are bricks
         brick_name = 'brick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/3))
-
+    else:
+        brick_name = 'plate_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(plate_z)
     #
     # Step 0:
     #
-    # create empty compound list that will contain
-    # the hull from step 1
-    # the studs from step 2
-    # the rings from step 3
+    # create empty compound list that will contain:
+    # - the hull from step 1
+    # - the studs from step 2
+    # - the rings from step 3
     # step 4 makes a compound of all these objects
     compound_list = []
     #
@@ -192,23 +154,26 @@ def make_brick(studs_x, studs_y, plate_z):
     # Step 3:
     #
     # Add the rings on the bottom of the brick or plate
-    # Figure out whether it is a plate or a brick
-    if plate_z % 3 == 0:	# plate_z is a multiple of 3, so a brick
-        ring_template = 'brick_ring_template'
-    else:
-        ring_template = 'plate_ring_template'
+    # Create a template ring
+    outer_cylinder = doc.addObject("Part::Cylinder", "outer_cylinder")
+    outer_cylinder.Radius = ring_radius_outer_mm
+    outer_cylinder.Height = height - wall_thickness_mm
+    inner_cylinder = doc.addObject("Part::Cylinder", "inner_cylinder")
+    inner_cylinder.Radius = ring_radius_inner_mm
+    inner_cylinder.Height = height - wall_thickness_mm
+    ring_template = doc.addObject('Part::Cut', 'ring_template')
+    ring_template.Base = outer_cylinder
+    ring_template.Tool = inner_cylinder
+    doc.recompute()
+    ring_template.ViewObject.hide()
     # create the rings and append each one to the compound_list
     for j in range(int(studs_x - 1)):		### TODO only place outer ring when using holes??
         for i in range(int(studs_y - 1)):
-            if plate_z % 3 == 0:		# plate_z is a multiple of 3, so a brick
-                ring = doc.addObject('Part::Feature','brick_ring_template') 
-                ring.Shape = doc.brick_ring_template.Shape 
-            else:
-                ring = doc.addObject('Part::Feature','plate_ring_template') 
-                ring.Shape = doc.plate_ring_template.Shape 
+            ring = doc.addObject('Part::Feature','ring_template') 
+            ring.Shape = doc.ring_template.Shape 
             ring.Label = brick_name + '_ring_' + str(i) + '_' + str(j)
-            xpos = (brick_width_mm + gap_mm) * (j + 1)
-            ypos = (brick_width_mm + gap_mm) * (i + 1)
+            xpos = (brick_width_mm + gap_mm) * (j + 1) - (gap_mm/2)
+            ypos = (brick_width_mm + gap_mm) * (i + 1) - (gap_mm/2)
             ring.Placement = FreeCAD.Placement(Vector(xpos, ypos, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
             compound_list.append(ring)
     #
@@ -217,7 +182,9 @@ def make_brick(studs_x, studs_y, plate_z):
     # brick is finished, so create a compound object with the name of the brick
     obj = doc.addObject("Part::Compound", brick_name)
     obj.Links = compound_list
-    ###obj.Placement = FreeCAD.Placement(Vector((brick_width_mm * offset), 0, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
+    # clean up
+    doc.removeObject("ring_template")
+    #doc.recompute()
     return obj
 
 """
@@ -234,12 +201,16 @@ def create_brick_series(studs_x, studs_y_max):
 """
 
 ### Example: to create single bricks
-make_brick(2, 4, 9)
-make_brick(4, 6, 6)
-make_brick(2, 3, 1)
-make_brick(2, 6, 1)
+#make_brick(2, 4, 9)
+make_brick(3, 7, 1)
+make_brick(4, 8, 2)
+make_brick(5, 9, 3)
+#make_brick(4, 4, 3)
+#make_brick(4, 6, 1)
+#make_brick(4, 6, 2)
+#make_brick(2, 12, 1)
+#make_brick(2, 6, 1)
 #make_brick(4, 6, 1, "plate_4x6")
-
 
 doc.recompute()
 FreeCADGui.ActiveDocument.ActiveView.fitAll()
