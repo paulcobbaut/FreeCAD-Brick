@@ -4,9 +4,9 @@ The goal is to make Lego-compatible pieces for use in 3D printer
 The script is able to generate .stl files directly.
 """
 # Dimensions for studs
-stud_radius_mm		= 2.475
+stud_radius_mm		= 2.475		# was 2.475 on 20221001
 stud_center_spacing_mm	= 8.000
-stud_height_mm		= 1.700
+stud_height_mm		= 1.900
 
 # Dimensions for plates
 plate_height_mm		= 3.200
@@ -21,10 +21,11 @@ brick_width_mm		= 7.800		# = plate_width_mm
 
 # Wall thickness for bricks and plates
 wall_thickness_mm	= 1.600	
+top_thickness_mm	= 1.000		# was 1.600 on 20220930
 
 # Dimensions underside rings
-ring_radius_outer_mm	= 3.256
-ring_radius_inner_mm	= 2.456
+ring_radius_outer_mm	= 3.220 	# was 3.226 on 20220929 (should be 3.25??)
+ring_radius_inner_mm	= 2.666		# was 2.456 on 20220930, 2.556 on 20221001 (should be 2.4???)
 brick_ring_height_mm	= 8.000
 plate_ring_height_mm	= 1.600
 
@@ -78,7 +79,7 @@ stud_template.ViewObject.hide()
 # Examples:
 # a standard 2x4 plate has (2, 4, 1, name) as parameters
 # a standard 2x4 brick has (2 ,4, 3, name) as parameters
-# a very long 1x16 plate has (2, 16, 1, name) as parameters
+# a very long 1x16 plate has (1, 16, 1, name) as parameters
 # a very wide 8x12 brick has (8, 12, 3, name) as parameters
 #
 # Important note:
@@ -87,7 +88,7 @@ stud_template.ViewObject.hide()
 # a 10x6 plate does not exist!
 # always put the smallest digit first!
 ###
-def make_brick(studs_x, studs_y, plate_z):
+def make_brick(studs_x, studs_y, plate_z, offset):
     #
     # Error handling
     #
@@ -123,7 +124,7 @@ def make_brick(studs_x, studs_y, plate_z):
     # inner_prism = the part that is substracted from outer_prism, thus hull has walls and ceiling
     inner_width = width - (2 * wall_thickness_mm)
     inner_length = length - (2 * wall_thickness_mm)
-    inner_height = height - wall_thickness_mm
+    inner_height = height - top_thickness_mm		# because - wall_thickness_mm was too much
     inner_prism = make_box("inner_prism", inner_width, inner_length, inner_height)
     # place the inner_prism at x and y exactly one wall thickness
     inner_prism.Placement = FreeCAD.Placement(Vector(wall_thickness_mm, wall_thickness_mm, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
@@ -146,8 +147,8 @@ def make_brick(studs_x, studs_y, plate_z):
             stud = doc.addObject('Part::Feature','stud_template')
             stud.Shape = doc.stud_template.Shape
             stud.Label = "stud_" + str(i) + '_' + str(j)
-            xpos = ((i+1) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2)
-            ypos = ((j+1) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2)
+            xpos = ((i+1) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2) - 0.1
+            ypos = ((j+1) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2) - 0.1
             stud.Placement = FreeCAD.Placement(Vector(xpos, ypos, height), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
             compound_list.append(stud)
     #
@@ -157,10 +158,10 @@ def make_brick(studs_x, studs_y, plate_z):
     # Create a template ring
     outer_cylinder = doc.addObject("Part::Cylinder", "outer_cylinder")
     outer_cylinder.Radius = ring_radius_outer_mm
-    outer_cylinder.Height = height - wall_thickness_mm
+    outer_cylinder.Height = height - top_thickness_mm
     inner_cylinder = doc.addObject("Part::Cylinder", "inner_cylinder")
     inner_cylinder.Radius = ring_radius_inner_mm
-    inner_cylinder.Height = height - wall_thickness_mm
+    inner_cylinder.Height = height - top_thickness_mm
     ring_template = doc.addObject('Part::Cut', 'ring_template')
     ring_template.Base = outer_cylinder
     ring_template.Tool = inner_cylinder
@@ -182,6 +183,8 @@ def make_brick(studs_x, studs_y, plate_z):
     # brick is finished, so create a compound object with the name of the brick
     obj = doc.addObject("Part::Compound", brick_name)
     obj.Links = compound_list
+    # Put it next to the previous objects (instead of all at 0,0)
+    obj.Placement = FreeCAD.Placement(Vector((brick_width_mm * offset), 0, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
     #
     # Step 5:
     #
@@ -195,30 +198,20 @@ def make_brick(studs_x, studs_y, plate_z):
     #return obj
 
 
-"""
-def create_brick_series(studs_x, studs_y_max):
+def make_brick_series(studs_x, studs_y_max, plate_z):
     offset = 0
     for i in range(int(studs_x), int(studs_y_max) + 1):
-        brick_name = "brick_" + str(studs_x) + 'x' + str(i)
-        brick = create_a_brick(brick_name, studs_x, i, offset)
+        brick = make_brick(studs_x, i, plate_z, offset)
         offset = offset + int(studs_x) + 1
-        doc.recompute()
-        export = []
-        export.append(doc.getObject(brick_name))
-        Mesh.export(export, u"/home/paul/FreeCAD models/brick_python/" + brick_name + ".stl")
-"""
 
 ### Example: to create single bricks
-#make_brick(2, 4, 9)
-make_brick(3, 7, 1)
-make_brick(4, 8, 2)
-make_brick(5, 9, 3)
-#make_brick(4, 4, 3)
-#make_brick(4, 6, 1)
-#make_brick(4, 6, 2)
-#make_brick(2, 12, 1)
-#make_brick(2, 6, 1)
-#make_brick(4, 6, 1, "plate_4x6")
+make_brick(2, 4, 3, 0)
+make_brick(4, 4, 1, 3)
+#make_brick(4, 4, 2, 9)
+
+### Example: to create a series of bricks
+#make_brick_series(2, 50, 3)
+#make_brick_series(4, 6, 1)
 
 doc.recompute()
 FreeCADGui.ActiveDocument.ActiveView.fitAll()
