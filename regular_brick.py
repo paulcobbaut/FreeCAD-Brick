@@ -75,7 +75,7 @@ def name_a_brick(studs_x, studs_y, plate_z):
     #
     if plate_z == 1:
     # plate
-        name = 'plate_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/2))
+        name = 'plate_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
     elif plate_z == 2:
     # plick
         name = 'plick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/2))
@@ -93,6 +93,7 @@ def name_a_brick(studs_x, studs_y, plate_z):
             name = 'xbrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/3))
     else:
         name = 'xplate_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(plate_z)
+    bricks[name] = (studs_x, studs_y, plate_z)
     return name
 
 def create_brick_hull(studs_x, studs_y, plate_z):
@@ -163,9 +164,6 @@ def add_brick_rings(studs_x, studs_y, plate_z):
             compound_list.append(ring)
     return compound_list
 
-
-
-
 ###
 # Create a brick:
 # studs_x 	--> width is in number of studs
@@ -185,13 +183,14 @@ def add_brick_rings(studs_x, studs_y, plate_z):
 # a 4x2 brick does not exist!
 # always put the smallest digit first!
 ###
-def make_brick(studs_x, studs_y, plate_z, offset):
+def make_brick(studs_x, studs_y, plate_z):
     # Exit if studs_y is smaller than studs_x
     if studs_y < studs_x:
         print('ERROR: make_brick(): studs_y (', studs_y, ') cannot be smaller than studs_x (', studs_x, ')')
         return
     # name the brick
     brick_name = name_a_brick(studs_x, studs_y, plate_z)
+    print('name:', brick_name, 'dict:', bricks)
     # create empty compound list that will contain:
     # - the hull 
     # - the studs
@@ -205,7 +204,7 @@ def make_brick(studs_x, studs_y, plate_z, offset):
     obj = doc.addObject("Part::Compound", brick_name)
     obj.Links = compound_list
     # Put it next to the previous objects (instead of all at 0,0)
-    obj.Placement = FreeCAD.Placement(Vector((brick_width_mm * offset), 0, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
+    # obj.Placement = FreeCAD.Placement(Vector((brick_width_mm * offset), 0, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
     #
     # Step 5:
     #
@@ -229,14 +228,17 @@ def make_brick_series(studs_x, studs_y_max, plate_z):
         brick = make_brick(studs_x, i, plate_z, offset)
         offset = offset + int(studs_x) + 1
 
+bricks = {}
+
+
 ### Example: to create single bricks
-make_brick(2, 4, 1, 0)
-make_brick(2, 4, 2, 3)
-make_brick(2, 4, 3, 6)
-make_brick(2, 4, 4, 9)
-make_brick(2, 4, 5, 12)
-make_brick(2, 4, 6, 15)
-make_brick(2, 4, 7, 18)
+make_brick(2, 4, 1)
+make_brick(2, 4, 2)
+make_brick(2, 4, 3)
+make_brick(2, 4, 4)
+make_brick(2, 4, 5)
+make_brick(2, 4, 6)
+make_brick(2, 4, 7)
 
 ### Example: to create a series of bricks
 #make_brick_series(2, 50, 3)
