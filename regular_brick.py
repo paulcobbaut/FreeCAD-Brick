@@ -198,13 +198,9 @@ def make_brick(studs_x, studs_y, plate_z):
         return
     # name the brick
     brick_name = name_a_brick(studs_x, studs_y, plate_z)
-    # compound list will contain:
-    # - the hull 
-    # - the studs
-    # - the rings
+    # compound list will contain: the hull, the studs, the rings
     compound_list = []
-    hull = create_brick_hull(brick_name)
-    compound_list.append(hull)
+    compound_list.append(create_brick_hull(brick_name))
     compound_list += add_brick_studs(brick_name)
     compound_list += add_brick_rings(brick_name)
     # brick is finished, so create a compound object with the name of the brick
