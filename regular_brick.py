@@ -96,12 +96,15 @@ def name_a_brick(studs_x, studs_y, plate_z):
     bricks[name] = (studs_x, studs_y, plate_z)
     return name
 
-def create_brick_hull(studs_x, studs_y, plate_z):
+def create_brick_hull(brick_name):
     # create the hull without studs and without rings
+    x = bricks[brick_name][0]
+    y = bricks[brick_name][1]
+    z = bricks[brick_name][2]
     # outer_prism = the brick block completely full
-    outer_width  = convert_studs_to_mm(studs_x)
-    outer_length = convert_studs_to_mm(studs_y)
-    outer_height = plate_z * plate_height_mm
+    outer_width  = convert_studs_to_mm(x)
+    outer_length = convert_studs_to_mm(y)
+    outer_height = z * plate_height_mm
     outer_prism = make_box("outer_prism", outer_width, outer_length, outer_height)
     # inner_prism = the part that is substracted from outer_prism, thus hull has walls and ceiling
     inner_width  = outer_width  - (2 * wall_thickness_mm)
@@ -112,7 +115,7 @@ def create_brick_hull(studs_x, studs_y, plate_z):
     inner_prism.Placement = FreeCAD.Placement(Vector(wall_thickness_mm, wall_thickness_mm, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
     # now cut the inner part out of the outer part
     # hull = the brick/plate without studs and without rings
-    hull = doc.addObject('Part::Cut', "hull")
+    hull = doc.addObject('Part::Cut', brick_name + "_hull")
     hull.Base = outer_prism
     hull.Tool = inner_prism
     outer_prism.ViewObject.hide()
@@ -196,7 +199,7 @@ def make_brick(studs_x, studs_y, plate_z):
     # - the studs
     # - the rings
     compound_list = []
-    hull = create_brick_hull(studs_x, studs_y, plate_z)
+    hull = create_brick_hull(brick_name)
     compound_list.append(hull)
     compound_list += add_brick_studs(studs_x, studs_y, plate_z)
     compound_list += add_brick_rings(studs_x, studs_y, plate_z)
