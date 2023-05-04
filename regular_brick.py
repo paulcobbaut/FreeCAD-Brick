@@ -1,12 +1,13 @@
 """
 regular_brick.py -- Paul Cobbaut, 2022-09-30
+updates 2023-05-04
 The goal is to make Lego-compatible pieces for use in 3D printer
 The script is able to generate .stl files directly.
 """
 # Dimensions for studs
 stud_radius_mm		= 2.475		# was 2.475 on 20221001
 stud_center_spacing_mm	= 8.000
-stud_height_mm		= 1.900
+stud_height_mm		= 1.700		# official 1.600
 
 # Dimensions for plates
 plate_height_mm		= 3.200
@@ -20,14 +21,12 @@ brick_height_mm		= 9.600		# plate_height_mm * 3
 brick_width_mm		= 7.800		# = plate_width_mm
 
 # Wall thickness for bricks and plates
-wall_thickness_mm	= 1.600	
+wall_thickness_mm	= 1.500		# 1.2 and 0.3 for new small beams or 1.5 for old bricks
 top_thickness_mm	= 1.000		# was 1.600 on 20220930
 
 # Dimensions underside rings
-ring_radius_outer_mm	= 3.220 	# was 3.226 on 20220929 (should be 3.25??)
-ring_radius_inner_mm	= 2.666		# was 2.456 on 20220930, 2.556 on 20221001 (should be 2.4???)
-brick_ring_height_mm	= 8.000
-plate_ring_height_mm	= 1.600
+ring_radius_outer_mm	= 3.250 	# was 3.220 on 1028, 3.226 on 20220929 (should be 3.25??)
+ring_radius_inner_mm	= 2.500		# was 2.666 pm 1029, 2.456 on 20220930, 2.556 on 20221001 (should be 2.4???)
 
 import FreeCAD
 from FreeCAD import Base, Vector
@@ -43,7 +42,7 @@ obj = doc.addObject("PartDesign::Body", "Body")
 def make_box(name, x, y, z):
     obj = doc.addObject("Part::Box", name)
     obj.Length = x
-    obj.Width = y
+    obj.Width  = y
     obj.Height = z
     return obj
 
@@ -51,12 +50,12 @@ def make_box(name, x, y, z):
 # one stud on brick	= 1 * brick_width_mm
 # two studs on brick	= 2 * brick_width_mm + 1 * gap_mm
 # three studs on brick	= 3 * brick_width_mm + 2 * gap_mm
-# plate_width_mm is identical
+# plate_width_mm is identical to brick_width_mm
 def convert_studs_to_mm(studs):
     mm = (studs * brick_width_mm) + ((studs - 1) * gap_mm)
     return mm
 
-# the stud template is always copied
+# the stud template is created once then always copied
 def make_stud(name):
     obj = doc.addObject("Part::Cylinder", name)
     obj.Radius = stud_radius_mm
@@ -64,9 +63,19 @@ def make_stud(name):
     doc.recompute()
     return obj
 
-# creating the templates
+# creating the template
 stud_template = make_stud("stud_template")
 stud_template.ViewObject.hide()
+
+# name a brick or plate
+def name_a_brick(studs_x, studs_y, plate_z):
+    if plate_z % 3 == 0:
+    # multiples of 3 are bricks
+        name = 'brick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/3))
+    else:
+    # not multiples of 3 are plates (add plick later)
+        name = 'plate_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(plate_z)
+    return name
 
 
 ###
@@ -99,10 +108,7 @@ def make_brick(studs_x, studs_y, plate_z, offset):
     #
     # Name this brick or plate using sizes
     #
-    if plate_z % 3 == 0:		# multiples of 3 are bricks
-        brick_name = 'brick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/3))
-    else:
-        brick_name = 'plate_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(plate_z)
+    brick_name = name_a_brick(studs_x, studs_y, plate_z)
     #
     # Step 0:
     #
@@ -151,6 +157,7 @@ def make_brick(studs_x, studs_y, plate_z, offset):
             ypos = ((j+1) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2) - 0.1
             stud.Placement = FreeCAD.Placement(Vector(xpos, ypos, height), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
             compound_list.append(stud)
+
     #
     # Step 3:
     #
@@ -177,6 +184,7 @@ def make_brick(studs_x, studs_y, plate_z, offset):
             ypos = (brick_width_mm + gap_mm) * (i + 1) - (gap_mm/2)
             ring.Placement = FreeCAD.Placement(Vector(xpos, ypos, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
             compound_list.append(ring)
+
     #
     # Step 4:
     #
@@ -190,11 +198,15 @@ def make_brick(studs_x, studs_y, plate_z, offset):
     #
     # upload .stl file
     doc.recompute()
+    """
     export = []
     export.append(doc.getObject(brick_name))
     Mesh.export(export, u"/home/paul/FreeCAD models/brick_python/" + brick_name + ".stl")
+    """
     # clean up
     doc.removeObject("ring_template")
+    doc.removeObject("outer_cylinder")
+    doc.removeObject("inner_cylinder")
     #return obj
 
 
@@ -206,8 +218,10 @@ def make_brick_series(studs_x, studs_y_max, plate_z):
 
 ### Example: to create single bricks
 make_brick(2, 4, 3, 0)
-make_brick(4, 4, 1, 3)
-#make_brick(4, 4, 2, 9)
+make_brick(2, 2, 2, 4)
+make_brick(3, 3, 1, 7)
+#make_brick(1, 5, 2, 3)
+#make_brick(1, 5, 3, 3)
 
 ### Example: to create a series of bricks
 #make_brick_series(2, 50, 3)
