@@ -28,11 +28,18 @@ top_thickness_mm	= 1.000		# was 1.600 on 20220930
 ring_radius_outer_mm	= 3.250 	# was 3.220 on 1028, 3.226 on 20220929 (should be 3.25??)
 ring_radius_inner_mm	= 2.500		# was 2.666 pm 1029, 2.456 on 20220930, 2.556 on 20221001 (should be 2.4???)
 
+# Dictionary of bricks generated; name:(studs_x, studs_y, plate_z) --> (width, length, height)
+bricks = {}
+
+# Used to visually separate the bricks in FreeCAD GUI
+offset = 0
+
 import FreeCAD
 from FreeCAD import Base, Vector
 import Part
 import Sketcher
 import Mesh
+import MeshPart
 
 # FreeCAD document
 doc = FreeCAD.newDocument("Lego brick generated")
@@ -207,44 +214,44 @@ def make_brick(studs_x, studs_y, plate_z):
     obj = doc.addObject("Part::Compound", brick_name)
     obj.Links = compound_list
     # Put it next to the previous objects (instead of all at 0,0)
-    # obj.Placement = FreeCAD.Placement(Vector((brick_width_mm * offset), 0, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
+    global offset
+    obj.Placement = FreeCAD.Placement(Vector((brick_width_mm * offset), 0, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
+    offset += studs_x + 1
     #
-    # Step 5:
-    #
-    # upload .stl file
-    doc.recompute()
-    """
-    export = []
-    export.append(doc.getObject(brick_name))
-    Mesh.export(export, u"/home/paul/FreeCAD models/brick_python/" + brick_name + ".stl")
-    """
     # clean up
     doc.removeObject("ring_template")
     doc.removeObject("outer_cylinder")
     doc.removeObject("inner_cylinder")
+    # create mesh from shape (compound)
+    doc.recompute()
+    mesh = doc.addObject("Mesh::Feature","Mesh")
+    part = doc.getObject(brick_name)
+    shape = Part.getShape(part,"")
+    mesh.Mesh = MeshPart.meshFromShape(Shape=shape, LinearDeflection=0.1, AngularDeflection=0.0174533, Relative=False)
+    mesh.Label = 'Mesh_' + brick_name
     #return obj
+
+    """
+    # upload .stl file
+    doc.recompute()
+    export = []
+    export.append(doc.getObject(brick_name))
+    Mesh.export(export, u"/home/paul/FreeCAD models/brick_python/" + brick_name + ".stl")
+    """
 
 
 def make_brick_series(studs_x, studs_y_max, plate_z):
     offset = 0
     for i in range(int(studs_x), int(studs_y_max) + 1):
-        brick = make_brick(studs_x, i, plate_z, offset)
+        brick = make_brick(studs_x, i, plate_z)
         offset = offset + int(studs_x) + 1
 
-bricks = {}
-
-
 ### Example: to create single bricks
-make_brick(2, 4, 1)
-make_brick(2, 4, 2)
-make_brick(2, 4, 3)
-make_brick(2, 4, 4)
-make_brick(2, 4, 5)
-make_brick(2, 4, 6)
-make_brick(2, 4, 7)
+#make_brick(2, 4, 1)
+#make_brick(2, 4, 2)
 
 ### Example: to create a series of bricks
-#make_brick_series(2, 50, 3)
+make_brick_series(2, 10, 3)
 #make_brick_series(4, 6, 1)
 
 doc.removeObject("stud_template")
