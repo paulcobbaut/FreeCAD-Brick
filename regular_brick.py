@@ -69,7 +69,13 @@ stud_template.ViewObject.hide()
 
 # name a brick or plate
 def name_a_brick(studs_x, studs_y, plate_z):
-    if plate_z % 3 == 0:
+    #
+    # Name a brick, plick or plate using the number of studs
+    #
+    if plate_z == 2:
+    # 1 = plate, 2 = plick, 3 = brick
+        name = 'plick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/2))
+    elif plate_z % 3 == 0:
     # multiples of 3 are bricks
         name = 'brick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/3))
     else:
@@ -77,61 +83,18 @@ def name_a_brick(studs_x, studs_y, plate_z):
         name = 'plate_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(plate_z)
     return name
 
-
-###
-# Create a brick:
-# studs_x 	--> width is in number of studs
-# studs_y 	--> length is in number of studs
-# plate_z 	--> height is in number of standard plate heights
-# name		--> string to name this object in FreeCAD
-#
-# Examples:
-# a standard 2x4 plate has (2, 4, 1, name) as parameters
-# a standard 2x4 brick has (2 ,4, 3, name) as parameters
-# a very long 1x16 plate has (1, 16, 1, name) as parameters
-# a very wide 8x12 brick has (8, 12, 3, name) as parameters
-#
-# Important note:
-# studs_y >= studs_x 
-# a 4x2 brick does not exist!
-# a 10x6 plate does not exist!
-# always put the smallest digit first!
-###
-def make_brick(studs_x, studs_y, plate_z, offset):
-    #
-    # Error handling
-    #
-    # Exit if studs_y is smaller than studs_x
-    if studs_y < studs_x:
-        print('ERROR: make_brick(): studs_y (', studs_y, ') cannot be smaller than studs_x (', studs_x, ')')
-        return
-    #
-    # Name this brick or plate using sizes
-    #
-    brick_name = name_a_brick(studs_x, studs_y, plate_z)
-    #
-    # Step 0:
-    #
-    # create empty compound list that will contain:
-    # - the hull from step 1
-    # - the studs from step 2
-    # - the rings from step 3
-    # step 4 makes a compound of all these objects
-    compound_list = []
-    #
-    # Step 1:
-    #
+def create_brick_hull(studs_x, studs_y, plate_z):
     # create the hull without studs and without rings
     # outer_prism = the brick block completely full
-    width = convert_studs_to_mm(studs_x)
-    length = convert_studs_to_mm(studs_y)
-    height = plate_z * plate_height_mm
-    outer_prism = make_box("outer_prism", width, length, height)
+    outer_width  = convert_studs_to_mm(studs_x)
+    outer_length = convert_studs_to_mm(studs_y)
+    outer_height = plate_z * plate_height_mm
+    outer_prism = make_box("outer_prism", outer_width, outer_length, outer_height)
     # inner_prism = the part that is substracted from outer_prism, thus hull has walls and ceiling
-    inner_width = width - (2 * wall_thickness_mm)
-    inner_length = length - (2 * wall_thickness_mm)
-    inner_height = height - top_thickness_mm		# because - wall_thickness_mm was too much
-    inner_prism = make_box("inner_prism", inner_width, inner_length, inner_height)
+    inner_width  = outer_width  - (2 * wall_thickness_mm)
+    inner_length = outer_length - (2 * wall_thickness_mm)
+    inner_height = outer_height - top_thickness_mm		# because - wall_thickness_mm was too much
+    inner_prism  = make_box("inner_prism", inner_width, inner_length, inner_height)
     # place the inner_prism at x and y exactly one wall thickness
     inner_prism.Placement = FreeCAD.Placement(Vector(wall_thickness_mm, wall_thickness_mm, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
     # now cut the inner part out of the outer part
@@ -141,13 +104,47 @@ def make_brick(studs_x, studs_y, plate_z, offset):
     hull.Tool = inner_prism
     outer_prism.ViewObject.hide()
     inner_prism.ViewObject.hide()
-    # append the hull to the compound_list
+    return hull
+
+###
+# Create a brick:
+# studs_x 	--> width is in number of studs
+# studs_y 	--> length is in number of studs
+# plate_z 	--> height is in number of standard plate heights
+# offset	--> spacing between objects (should be automated)
+#
+# Examples:
+# a standard 2x4 plate has (2, 4, 1, offset) as parameters
+# a standard 2x4 brick has (2 ,4, 3, offset) as parameters
+# a very long 1x16 plate has (1, 16, 1, offset) as parameters
+# a very wide 8x12 brick has (8, 12, 3, offset) as parameters
+# a 2x2 plick has (2, 2, 2, offset)
+#
+# Important note:
+# studs_y >= studs_x 
+# a 4x2 brick does not exist!
+# always put the smallest digit first!
+###
+def make_brick(studs_x, studs_y, plate_z, offset):
+    # Exit if studs_y is smaller than studs_x
+    if studs_y < studs_x:
+        print('ERROR: make_brick(): studs_y (', studs_y, ') cannot be smaller than studs_x (', studs_x, ')')
+        return
+    # name the brick
+    brick_name = name_a_brick(studs_x, studs_y, plate_z)
+    # create empty compound list that will contain:
+    # - the hull 
+    # - the studs
+    # - the rings
+    compound_list = []
+    hull = create_brick_hull(studs_x, studs_y, plate_z)
     compound_list.append(hull)
     #
     # Step 2:
     #
     # Add the studs on top of the brick or plate
     # create the studs and append each one to the compound_list
+    height = plate_z * plate_height_mm
     for i in range(int(studs_x)):
         for j in range(int(studs_y)):
             stud = doc.addObject('Part::Feature','stud_template')
