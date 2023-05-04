@@ -71,16 +71,28 @@ stud_template.ViewObject.hide()
 def name_a_brick(studs_x, studs_y, plate_z):
     #
     # Name a brick, plick or plate using the number of studs
+    # thickness: 1 = plate, 2 = plick, 3 = brick
     #
-    if plate_z == 2:
-    # 1 = plate, 2 = plick, 3 = brick
+    if plate_z == 1:
+    # plate
+        name = 'plate_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/2))
+    elif plate_z == 2:
+    # plick
         name = 'plick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/2))
     elif plate_z % 3 == 0:
-    # multiples of 3 are bricks
-        name = 'brick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/3))
+    # brick (all multiples of 3 are bricks)
+        if plate_z == 3:
+            name = 'brick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/3))
+        elif plate_z == 6:
+            name = 'doublebrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/3))
+        elif plate_z == 9:
+            name = 'triplebrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/3))
+        elif plate_z == 12:
+            name = 'quadruplebrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/3))
+        else:
+            name = 'xbrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/3))
     else:
-    # not multiples of 3 are plates (add plick later)
-        name = 'plate_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(plate_z)
+        name = 'xplate_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(plate_z)
     return name
 
 def create_brick_hull(studs_x, studs_y, plate_z):
@@ -189,10 +201,6 @@ def make_brick(studs_x, studs_y, plate_z, offset):
     compound_list.append(hull)
     compound_list += add_brick_studs(studs_x, studs_y, plate_z)
     compound_list += add_brick_rings(studs_x, studs_y, plate_z)
-    
-    #
-    # Step 4:
-    #
     # brick is finished, so create a compound object with the name of the brick
     obj = doc.addObject("Part::Compound", brick_name)
     obj.Links = compound_list
@@ -212,7 +220,6 @@ def make_brick(studs_x, studs_y, plate_z, offset):
     doc.removeObject("ring_template")
     doc.removeObject("outer_cylinder")
     doc.removeObject("inner_cylinder")
-    #doc.removeObject("hull")
     #return obj
 
 
@@ -223,11 +230,13 @@ def make_brick_series(studs_x, studs_y_max, plate_z):
         offset = offset + int(studs_x) + 1
 
 ### Example: to create single bricks
-make_brick(2, 4, 3, 0)
-make_brick(2, 2, 2, 4)
-make_brick(3, 3, 1, 7)
-#make_brick(1, 5, 2, 3)
-#make_brick(1, 5, 3, 3)
+make_brick(2, 4, 1, 0)
+make_brick(2, 4, 2, 3)
+make_brick(2, 4, 3, 6)
+make_brick(2, 4, 4, 9)
+make_brick(2, 4, 5, 12)
+make_brick(2, 4, 6, 15)
+make_brick(2, 4, 7, 18)
 
 ### Example: to create a series of bricks
 #make_brick_series(2, 50, 3)
