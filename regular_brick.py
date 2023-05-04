@@ -180,18 +180,16 @@ def add_brick_rings(brick_name):
     return compound_list
 
 ###
-# Create a brick:
+# Make a brick:
 # studs_x 	--> width is in number of studs
 # studs_y 	--> length is in number of studs
 # plate_z 	--> height is in number of standard plate heights
-# offset	--> spacing between objects (should be automated)
 #
 # Examples:
-# a standard 2x4 plate has (2, 4, 1, offset) as parameters
-# a standard 2x4 brick has (2 ,4, 3, offset) as parameters
-# a very long 1x16 plate has (1, 16, 1, offset) as parameters
-# a very wide 8x12 brick has (8, 12, 3, offset) as parameters
-# a 2x2 plick has (2, 2, 2, offset)
+# a standard 2x4 plate has (2, 4, 1) as parameters
+# a standard 2x4 brick has (2 ,4, 3) as parameters
+# a very long 1x16 plate has (1, 16, 1) as parameters
+# a very wide 8x12 plick has (8, 12, 2) as parameters
 #
 # Important note:
 # studs_y >= studs_x 
@@ -229,16 +227,11 @@ def make_brick(studs_x, studs_y, plate_z):
     shape = Part.getShape(part,"")
     mesh.Mesh = MeshPart.meshFromShape(Shape=shape, LinearDeflection=0.1, AngularDeflection=0.0174533, Relative=False)
     mesh.Label = 'Mesh_' + brick_name
-    #return obj
-
-    """
     # upload .stl file
-    doc.recompute()
     export = []
     export.append(doc.getObject(brick_name))
-    Mesh.export(export, u"/home/paul/FreeCAD models/brick_python/" + brick_name + ".stl")
-    """
-
+    Mesh.export(export, u"/home/paul/FreeCAD/generated_bricks/" + brick_name + ".stl")
+    #return obj
 
 def make_brick_series(studs_x, studs_y_max, plate_z):
     offset = 0
