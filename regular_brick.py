@@ -122,27 +122,33 @@ def create_brick_hull(brick_name):
     inner_prism.ViewObject.hide()
     return hull
 
-def add_brick_studs(studs_x, studs_y, plate_z):
+def add_brick_studs(brick_name):
     # Add the studs on top
     # create the studs and append each one to a compound_list
     compound_list=[]
-    height = plate_z * plate_height_mm
-    for i in range(int(studs_x)):
-        for j in range(int(studs_y)):
+    x = bricks[brick_name][0]
+    y = bricks[brick_name][1]
+    z = bricks[brick_name][2]
+    height = z * plate_height_mm
+    for i in range(int(x)):
+        for j in range(int(y)):
             stud = doc.addObject('Part::Feature','stud_template')
             stud.Shape = doc.stud_template.Shape
-            stud.Label = "stud_" + str(i) + '_' + str(j)
+            stud.Label = "stud_" + brick_name + '_' + str(i) + '_' + str(j)
             xpos = ((i+1) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2) - 0.1 # wth is -0.1?
             ypos = ((j+1) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2) - 0.1
             stud.Placement = FreeCAD.Placement(Vector(xpos, ypos, height), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
             compound_list.append(stud)
     return compound_list
 
-def add_brick_rings(studs_x, studs_y, plate_z):
+def add_brick_rings(brick_name):
     # Add the rings on the bottom of the brick
     compound_list = []
+    x = bricks[brick_name][0]
+    y = bricks[brick_name][1]
+    z = bricks[brick_name][2]
     # Create a template ring
-    height = plate_z * plate_height_mm
+    height = z * plate_height_mm
     outer_cylinder = doc.addObject("Part::Cylinder", "outer_cylinder")
     outer_cylinder.Radius = ring_radius_outer_mm
     outer_cylinder.Height = height - top_thickness_mm
@@ -155,12 +161,11 @@ def add_brick_rings(studs_x, studs_y, plate_z):
     doc.recompute()
     ring_template.ViewObject.hide()
     # create the rings and append each one to the compound_list
-    for j in range(int(studs_x - 1)):		### TODO only place outer ring when using holes??
-        for i in range(int(studs_y - 1)):
+    for j in range(int(x - 1)):		### TODO only place outer ring when using holes??
+        for i in range(int(y - 1)):
             ring = doc.addObject('Part::Feature','ring_template') 
             ring.Shape = doc.ring_template.Shape 
-            ring.Label = 'ring_' + str(i) + '_' + str(j)
-            #ring.Label = brick_name + '_ring_' + str(i) + '_' + str(j)
+            ring.Label = 'ring_' + brick_name + str(i) + '_' + str(j)
             xpos = (brick_width_mm + gap_mm) * (j + 1) - (gap_mm/2)
             ypos = (brick_width_mm + gap_mm) * (i + 1) - (gap_mm/2)
             ring.Placement = FreeCAD.Placement(Vector(xpos, ypos, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
@@ -193,16 +198,15 @@ def make_brick(studs_x, studs_y, plate_z):
         return
     # name the brick
     brick_name = name_a_brick(studs_x, studs_y, plate_z)
-    print('name:', brick_name, 'dict:', bricks)
-    # create empty compound list that will contain:
+    # compound list will contain:
     # - the hull 
     # - the studs
     # - the rings
     compound_list = []
     hull = create_brick_hull(brick_name)
     compound_list.append(hull)
-    compound_list += add_brick_studs(studs_x, studs_y, plate_z)
-    compound_list += add_brick_rings(studs_x, studs_y, plate_z)
+    compound_list += add_brick_studs(brick_name)
+    compound_list += add_brick_rings(brick_name)
     # brick is finished, so create a compound object with the name of the brick
     obj = doc.addObject("Part::Compound", brick_name)
     obj.Links = compound_list
