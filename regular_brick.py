@@ -2,7 +2,7 @@
 regular_brick.py -- Paul Cobbaut, 2022-09-30
 updates 2023-05-04
 The goal is to make Lego-compatible pieces for use in 3D printer
-The script is able to generate .stl files directly.
+The script generates .stl files in a directory.
 """
 # Dimensions for studs
 stud_radius_mm		= 2.475		# was 2.475 on 20221001
@@ -34,6 +34,10 @@ bricks = {}
 # Used to visually separate the bricks in FreeCAD GUI
 offset = 0
 
+# The directory to export the .stl files to
+export_directory = "/home/paul/FreeCAD/generated_bricks/"
+
+
 import FreeCAD
 from FreeCAD import Base, Vector
 import Part
@@ -41,7 +45,7 @@ import Sketcher
 import Mesh
 import MeshPart
 
-# FreeCAD document
+# create a FreeCAD document and Part Design body
 doc = FreeCAD.newDocument("Lego brick generated")
 obj = doc.addObject("PartDesign::Body", "Body")
 
@@ -79,25 +83,29 @@ def name_a_brick(studs_x, studs_y, plate_z):
     #
     # Name a brick, plick or plate using the number of studs
     # thickness: 1 = plate, 2 = plick, 3 = brick
+    # name plate/plick/brick is followed by
+    # - number of studs X
+    # - number of studs Y
+    # - thickness in plates Z
     #
     if plate_z == 1:
     # plate
         name = 'plate_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
     elif plate_z == 2:
     # plick
-        name = 'plick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/2))
+        name = 'plick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
     elif plate_z % 3 == 0:
     # brick (all multiples of 3 are bricks)
         if plate_z == 3:
-            name = 'brick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/3))
+            name = 'brick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
         elif plate_z == 6:
-            name = 'doublebrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/3))
+            name = 'doublebrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
         elif plate_z == 9:
-            name = 'triplebrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/3))
+            name = 'triplebrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
         elif plate_z == 12:
-            name = 'quadruplebrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/3))
+            name = 'quadruplebrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
         else:
-            name = 'xbrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z/3))
+            name = 'xbrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
     else:
         name = 'xplate_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(plate_z)
     bricks[name] = (studs_x, studs_y, plate_z)
@@ -142,8 +150,8 @@ def add_brick_studs(brick_name):
             stud = doc.addObject('Part::Feature','stud_template')
             stud.Shape = doc.stud_template.Shape
             stud.Label = "stud_" + brick_name + '_' + str(i) + '_' + str(j)
-            xpos = ((i+1) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2) - 0.1 # wth is -0.1?
-            ypos = ((j+1) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2) - 0.1
+            xpos = ((i+1) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2) - (gap_mm / 2)
+            ypos = ((j+1) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2) - (gap_mm / 2)
             stud.Placement = FreeCAD.Placement(Vector(xpos, ypos, height), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
             compound_list.append(stud)
     return compound_list
@@ -154,7 +162,7 @@ def add_brick_rings(brick_name):
     x = bricks[brick_name][0]
     y = bricks[brick_name][1]
     z = bricks[brick_name][2]
-    # Create a template ring
+    # Create a template ring (all rings for a single brick are the same height)
     height = z * plate_height_mm
     outer_cylinder = doc.addObject("Part::Cylinder", "outer_cylinder")
     outer_cylinder.Radius = ring_radius_outer_mm
@@ -166,9 +174,9 @@ def add_brick_rings(brick_name):
     ring_template.Base = outer_cylinder
     ring_template.Tool = inner_cylinder
     doc.recompute()
-    ring_template.ViewObject.hide()
+    #ring_template.ViewObject.hide()
     # create the rings and append each one to the compound_list
-    for j in range(int(x - 1)):		### TODO only place outer ring when using holes??
+    for j in range(int(x - 1)):
         for i in range(int(y - 1)):
             ring = doc.addObject('Part::Feature','ring_template') 
             ring.Shape = doc.ring_template.Shape 
@@ -230,22 +238,23 @@ def make_brick(studs_x, studs_y, plate_z):
     # upload .stl file
     export = []
     export.append(doc.getObject(brick_name))
-    Mesh.export(export, u"/home/paul/FreeCAD/generated_bricks/" + brick_name + ".stl")
+    Mesh.export(export, export_directory + brick_name + ".stl")
     #return obj
 
 def make_brick_series(studs_x, studs_y_max, plate_z):
-    offset = 0
     for i in range(int(studs_x), int(studs_y_max) + 1):
         brick = make_brick(studs_x, i, plate_z)
-        offset = offset + int(studs_x) + 1
 
 ### Example: to create single bricks
-#make_brick(2, 4, 1)
-#make_brick(2, 4, 2)
+make_brick(2, 4, 1)
+make_brick(4, 6, 2)
+make_brick(2, 4, 3)
+make_brick(5, 9, 6)
+make_brick(2, 4, 3)
 
 ### Example: to create a series of bricks
-make_brick_series(2, 10, 3)
-#make_brick_series(4, 6, 1)
+make_brick_series(7, 10, 3)
+make_brick_series(4, 6, 1)
 
 doc.removeObject("stud_template")
 doc.recompute()
