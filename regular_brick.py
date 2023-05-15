@@ -217,8 +217,8 @@ def create_rectangular_brick_hull(brick_name):
     outer_hole_length = convert_studs_to_mm(hole_y)
     outer_hole = make_box("outer_hole", outer_hole_width, outer_hole_length, outer_height)
     # place hole
-    offset_x = convert_studs_to_mm(side_x)
-    offset_y = convert_studs_to_mm(side_y)
+    offset_x = convert_studs_to_mm(side_x) + gap_mm
+    offset_y = convert_studs_to_mm(side_y) + gap_mm
     outer_hole.Placement = FreeCAD.Placement(Vector(offset_x, offset_y, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
     # cut hole out of solid
     holed_solid = doc.addObject('Part::Cut', brick_name + "_holed_solid")
@@ -230,7 +230,7 @@ def create_rectangular_brick_hull(brick_name):
     inner_hole_length = outer_hole_length - (2 * wall_thickness_mm)
     inner_hole  = make_box("inner_hole", inner_hole_width, inner_hole_length, outer_height) # no roof in hole
     # place the inner_prism at x and y exactly one wall thickness
-    inner_hole_position = Vector(offset_x + wall_thickness_mm, offset_y + wall_thickness_mm, 0)
+    inner_hole_position = Vector(offset_x + wall_thickness_mm + gap_mm, offset_y + wall_thickness_mm + gap_mm, 0)
     inner_hole.Placement = FreeCAD.Placement(inner_hole_position, FreeCAD.Rotation(0,0,0), Vector(0,0,0))
     # now cut the inner hole out of the outer hole
     # hole_walls = the hole walls
@@ -500,7 +500,7 @@ make_brick_series(1,4,9)
 #make_rectangle_brick(1,1,1,1,1) # this is the smallest possible
 #make_rectangle_brick(1,1,0,0,1) # seems to work, kinda pointless imho
 make_rectangle_brick(3,4,4,2,3) # total width = 3+2+2 (studs_x on both sides)
-make_rectangle_brick(2,2,0,2,1)
+make_rectangle_brick(2,1,2,1,3)
 
 
 
