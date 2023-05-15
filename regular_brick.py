@@ -483,7 +483,11 @@ def make_brick_series(studs_x, studs_y_max, plate_z):
 #make_brick(4, 4, 2) # creates a 4x4 plick
 #make_brick(4, 5, 3)
 #make_brick(5, 9, 3)
-make_brick(2, 8, 3)
+make_brick(4, 4, 1)
+make_brick(6, 6, 2)
+make_brick(8, 8, 3)
+make_brick(4, 8, 3)
+make_brick(2, 8, 6)
 
 ### Example: to create a series of bricks
 ### make_brick_series(width_in_studs, max_length_in_studs, heigth_in_plates)
@@ -492,7 +496,10 @@ make_brick(2, 8, 3)
 #make_brick_series(4, 8, 1) # creates five plates
 #make_brick_series(12, 42, 3) # takes some time to compute so be patient or use smaller numbers
 #make_brick_series(3,8,8)
-make_brick_series(1,4,9)
+make_brick_series(1,10,1)
+make_brick_series(2,10,1)
+make_brick_series(1,10,3)
+make_brick_series(2,10,3)
 
 ### Example: to create rectangle bricks
 ### Minimal size = 3 x 3 (a 1x1 hole with 1 stud on all sides)
@@ -501,6 +508,10 @@ make_brick_series(1,4,9)
 #make_rectangle_brick(1,1,0,0,1) # seems to work, kinda pointless imho
 make_rectangle_brick(3,4,4,2,3) # total width = 3+2+2 (studs_x on both sides)
 make_rectangle_brick(2,1,2,1,3)
+make_rectangle_brick(2,2,0,2,1)
+make_rectangle_brick(2,2,1,1,1)
+make_rectangle_brick(4,1,2,2,3)
+make_rectangle_brick(2,5,4,2,3)
 
 
 
