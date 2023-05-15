@@ -277,7 +277,6 @@ def add_rectangular_brick_studs(brick_name):
 def add_brick_studs(brick_name):
     # Add the studs on top
     # create the studs and append each one to a compound_list
-    return
     compound_list=[]
     x = bricks[brick_name][0]
     y = bricks[brick_name][1]
@@ -326,6 +325,51 @@ def add_brick_rings(brick_name):
             ring.Placement = FreeCAD.Placement(Vector(xpos, ypos, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
             compound_list.append(ring)
     return compound_list
+
+
+
+def add_rectangular_brick_rings(brick_name):
+    # Add the rings on the bottom of the brick
+    compound_list = []
+    side_x = rectangular_bricks[brick_name][0]
+    side_y = rectangular_bricks[brick_name][1]
+    hole_x = rectangular_bricks[brick_name][2]
+    hole_y = rectangular_bricks[brick_name][3]
+    z = rectangular_bricks[brick_name][4]
+    studs_x = hole_x + (side_x * 2)
+    studs_y = hole_y + (side_y * 2)
+    height = z * plate_height_mm
+    # Create a template ring (all rings for a single brick are the same height)
+    outer_cylinder = doc.addObject("Part::Cylinder", "outer_cylinder")
+    outer_cylinder.Radius = ring_radius_outer_mm
+    outer_cylinder.Height = height - top_thickness_mm
+    inner_cylinder = doc.addObject("Part::Cylinder", "inner_cylinder")
+    inner_cylinder.Radius = ring_radius_inner_mm
+    inner_cylinder.Height = height - top_thickness_mm
+    ring_template = doc.addObject('Part::Cut', 'ring_template')
+    ring_template.Base = outer_cylinder
+    ring_template.Tool = inner_cylinder
+    doc.recompute()
+    #ring_template.ViewObject.hide()
+    # create the rings and append each one to the compound_list
+    for i in range(int(studs_x - 1)):
+        for j in range(int(studs_y - 1)):
+            if ( (i < (side_x - 1)) or (i >= (side_x + hole_x)) ) or ( (j < (side_y - 1)) or (j >= (side_y + hole_y)) ):
+                ring = doc.addObject('Part::Feature','ring_template') 
+                ring.Shape = doc.ring_template.Shape 
+                ring.Label = 'ring_' + brick_name + str(i) + '_' + str(j)
+                xpos = (brick_width_mm + gap_mm) * (i + 1) - (gap_mm/2)
+                ypos = (brick_width_mm + gap_mm) * (j + 1) - (gap_mm/2)
+                ring.Placement = FreeCAD.Placement(Vector(xpos, ypos, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
+                compound_list.append(ring)
+    return compound_list
+
+
+
+
+
+
+
 
 ###
 # Make a brick:
@@ -413,7 +457,7 @@ def make_rectangle_brick(hole_x, hole_y, side_x, side_y, plate_z):
     # Put it next to the previous objects (instead of all at 0,0)
     global offset
     obj.Placement = FreeCAD.Placement(Vector((brick_width_mm * offset), 0, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
-    offset += studs_x + 1
+    offset += side_x + side_x + hole_x + 1
     #
     # clean up
     doc.removeObject("ring_template")
@@ -437,22 +481,28 @@ def make_brick_series(studs_x, studs_y_max, plate_z):
         brick = make_brick(studs_x, i, plate_z)
 
 ### Example: to create single bricks
-#make_brick(2, 4, 1)
-#make_brick(4, 6, 2)
+### make_brick(width_in_studs, length_in_studs, height_in_plates)
 #make_brick(2, 4, 3)
-#make_brick(2, 5, 3)
-#make_brick(5, 9, 6)
-#make_brick(2, 4, 3)
+#make_brick(2, 6, 3)
+#make_brick(3, 4, 3)
+#make_brick(3, 5, 3)
+#make_brick(4, 9, 3)
+#make_brick(4, 9, 3)
 
 ### Example: to create a series of bricks
-#make_brick_series(7, 10, 3)
-#make_brick_series(4, 6, 1)
+### make_brick_series(width_in_studs, max_length_in_studs, heigth_in_plates)
+### length starts at width
+#make_brick_series(7, 9, 3) # create a 7x7, a 7x8, and a 7x9 brick
+#make_brick_series(4, 8, 1) # creates five bricks
+#make_brick_series(12, 42, 3) # takes some time to compute so be patient or use smaller numbers
+
 
 ### Example: to create rectangle bricks
-### Minimal size = 3 x 3
+### Minimal size = 3 x 3 (a 1x1 hole with 1 stud on all sides)
 ### make_rectangle_brick(hole_x, hole_y, studs_x, studs_y, plate_z)
-make_rectangle_brick(2,5,1,1,9)
-#make_rectangle_brick(4,6,1,1,3)
+make_rectangle_brick(1,1,1,1,1) # this is the smallest possible
+make_rectangle_brick(2,3,2,2,3)
+make_rectangle_brick(2,4,3,3,3)
 
 
 
