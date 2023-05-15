@@ -127,27 +127,28 @@ def name_a_rectangular_brick(side_x, side_y, hole_x, hole_y, plate_z):
     # - thickness in plates Z
     #
     side_name = str(side_x) + 'x' + str(side_y)
-    hole_name = '_hole_' + str(hole_x) + '_by_' + str(hole_y)
+    hole_name = '__hole_' + str(hole_x) + 'x' + str(hole_y)
+    height_name = '__height_' + str(int(plate_z))
     if plate_z == 1:
     # plate
-        name = 'rectangular_plate_' + side_name + hole_name + 'x' + str(int(plate_z))
+        name = 'rectangularplate_' + side_name + hole_name + height_name 
     elif plate_z == 2:
     # plick
-        name = 'rectangular_plick_' + side_name + hole_name + 'x' + str(int(plate_z))
+        name = 'rectangularplick_' + side_name + hole_name + height_name 
     elif plate_z % 3 == 0:
     # brick (all multiples of 3 are bricks)
         if plate_z == 3:
-            name = 'rectangular_brick_' + side_name + hole_name + 'x' + str(int(plate_z))
+            name = 'rectangularbrick_' + side_name + hole_name + height_name 
         elif plate_z == 6:
-            name = 'rectangular_doublebrick_' + side_name + hole_name + 'x' + str(int(plate_z))
+            name = 'rectangulardoublebrick_' + side_name + hole_name + height_name 
         elif plate_z == 9:
-            name = 'rectangular_triplebrick_' + side_name + hole_name + 'x' + str(int(plate_z))
+            name = 'rectangulartriplebrick_' + side_name + hole_name + height_name 
         elif plate_z == 12:
-            name = 'rectangular_quadruplebrick_' + side_name + hole_name + 'x' + str(int(plate_z))
+            name = 'rectangularquadruplebrick_' + side_name + hole_name + height_name 
         else:
-            name = 'rectangular_xbrick_' + side_name + hole_name + 'x' + str(int(plate_z))
+            name = 'rectangularxbrick_' + side_name + hole_name + height_name 
     else:
-        name = 'rectangular_xplate_' + side_name + hole_name + 'x' + str(plate_z)
+        name = 'rectangularxplate_' + side_name + hole_name + height_name 
     rectangular_bricks[name] = (side_x, side_y, hole_x, hole_y, plate_z)
     return name
 
@@ -366,11 +367,6 @@ def add_rectangular_brick_rings(brick_name):
 
 
 
-
-
-
-
-
 ###
 # Make a brick:
 # studs_x 	--> width is in number of studs
@@ -493,7 +489,7 @@ make_brick(2, 8, 3)
 ### make_brick_series(width_in_studs, max_length_in_studs, heigth_in_plates)
 ### length starts at width
 #make_brick_series(7, 9, 3) # create a 7x7, a 7x8, and a 7x9 brick
-#make_brick_series(4, 8, 1) # creates five bricks
+#make_brick_series(4, 8, 1) # creates five plates
 #make_brick_series(12, 42, 3) # takes some time to compute so be patient or use smaller numbers
 #make_brick_series(3,8,8)
 make_brick_series(1,4,9)
@@ -502,10 +498,13 @@ make_brick_series(1,4,9)
 ### Minimal size = 3 x 3 (a 1x1 hole with 1 stud on all sides)
 ### make_rectangle_brick(hole_x, hole_y, studs_x, studs_y, plate_z)
 #make_rectangle_brick(1,1,1,1,1) # this is the smallest possible
-make_rectangle_brick(3,3,2,2,3)
+#make_rectangle_brick(1,1,0,0,1) # seems to work, kinda pointless imho
+make_rectangle_brick(3,4,4,2,3) # total width = 3+2+2 (studs_x on both sides)
+make_rectangle_brick(2,2,0,2,1)
 
 
 
 doc.removeObject("stud_template")
 doc.recompute()
 FreeCADGui.ActiveDocument.ActiveView.fitAll()
+
