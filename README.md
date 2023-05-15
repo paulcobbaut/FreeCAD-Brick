@@ -3,6 +3,8 @@ Creating Lego compatible bricks using FreeCAD and Python
 
 This is a work in progress.
 
+See also: https://www.printables.com/model/481897-different-bricks
+
 ### Goal
 Create .stl files for a slicer that contain Lego-compatible bricks of all kinds.
 
