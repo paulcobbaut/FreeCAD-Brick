@@ -315,13 +315,13 @@ def add_brick_rings(brick_name):
     doc.recompute()
     #ring_template.ViewObject.hide()
     # create the rings and append each one to the compound_list
-    for j in range(int(x - 1)):
-        for i in range(int(y - 1)):
+    for i in range(int(x - 1)):
+        for j in range(int(y - 1)):
             ring = doc.addObject('Part::Feature','ring_template') 
             ring.Shape = doc.ring_template.Shape 
             ring.Label = 'ring_' + brick_name + str(i) + '_' + str(j)
-            xpos = (brick_width_mm + gap_mm) * (j + 1) - (gap_mm/2)
-            ypos = (brick_width_mm + gap_mm) * (i + 1) - (gap_mm/2)
+            xpos = (brick_width_mm + gap_mm) * (i + 1) - (gap_mm/2)
+            ypos = (brick_width_mm + gap_mm) * (j + 1) - (gap_mm/2)
             ring.Placement = FreeCAD.Placement(Vector(xpos, ypos, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
             compound_list.append(ring)
     return compound_list
@@ -482,12 +482,12 @@ def make_brick_series(studs_x, studs_y_max, plate_z):
 
 ### Example: to create single bricks
 ### make_brick(width_in_studs, length_in_studs, height_in_plates)
-#make_brick(2, 4, 3)
-#make_brick(2, 6, 3)
-#make_brick(3, 4, 3)
-#make_brick(3, 5, 3)
-#make_brick(4, 9, 3)
-#make_brick(4, 9, 3)
+#make_brick(2, 4, 3) # creates the common 2x4 brick
+#make_brick(2, 6, 1) # creates a 2x6 plate
+#make_brick(4, 4, 2) # creates a 4x4 plick
+#make_brick(4, 5, 3)
+#make_brick(5, 9, 3)
+make_brick(2, 8, 3)
 
 ### Example: to create a series of bricks
 ### make_brick_series(width_in_studs, max_length_in_studs, heigth_in_plates)
@@ -495,14 +495,14 @@ def make_brick_series(studs_x, studs_y_max, plate_z):
 #make_brick_series(7, 9, 3) # create a 7x7, a 7x8, and a 7x9 brick
 #make_brick_series(4, 8, 1) # creates five bricks
 #make_brick_series(12, 42, 3) # takes some time to compute so be patient or use smaller numbers
-
+#make_brick_series(3,8,8)
+make_brick_series(1,4,9)
 
 ### Example: to create rectangle bricks
 ### Minimal size = 3 x 3 (a 1x1 hole with 1 stud on all sides)
 ### make_rectangle_brick(hole_x, hole_y, studs_x, studs_y, plate_z)
-make_rectangle_brick(1,1,1,1,1) # this is the smallest possible
-make_rectangle_brick(2,3,2,2,3)
-make_rectangle_brick(2,4,3,3,3)
+#make_rectangle_brick(1,1,1,1,1) # this is the smallest possible
+make_rectangle_brick(3,3,2,2,3)
 
 
 
