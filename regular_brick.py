@@ -247,28 +247,34 @@ def create_rectangular_brick_hull(brick_name):
 
 
 
-def add_brick_studs(brick_name):
+def add_rectangular_brick_studs(brick_name):
     # Add the studs on top
     # create the studs and append each one to a compound_list
     compound_list=[]
-    x = bricks[brick_name][0]
-    y = bricks[brick_name][1]
-    z = bricks[brick_name][2]
+    # dimensions
+    side_x = rectangular_bricks[brick_name][0]
+    side_y = rectangular_bricks[brick_name][1]
+    hole_x = rectangular_bricks[brick_name][2]
+    hole_y = rectangular_bricks[brick_name][3]
+    z = rectangular_bricks[brick_name][4]
+    studs_x = hole_x + (side_x * 2)
+    studs_y = hole_y + (side_y * 2)
     height = z * plate_height_mm
-    for i in range(int(x)):
-        for j in range(int(y)):
-            stud = doc.addObject('Part::Feature','stud_template')
-            stud.Shape = doc.stud_template.Shape
-            stud.Label = "stud_" + brick_name + '_' + str(i) + '_' + str(j)
-            xpos = ((i+1) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2) - (gap_mm / 2)
-            ypos = ((j+1) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2) - (gap_mm / 2)
-            stud.Placement = FreeCAD.Placement(Vector(xpos, ypos, height), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
-            compound_list.append(stud)
+    for i in range(int(studs_x)):
+        for j in range(int(studs_y)):
+            if ( (i < side_x) or (i >= (side_x + hole_x)) ) or ( (j < side_y) or (j >= (side_y + hole_y)) ):
+                stud = doc.addObject('Part::Feature','stud_template')
+                stud.Shape = doc.stud_template.Shape
+                stud.Label = "stud_" + brick_name + '_' + str(i) + '_' + str(j)
+                xpos = ((i+1) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2) - (gap_mm / 2)
+                ypos = ((j+1) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2) - (gap_mm / 2)
+                stud.Placement = FreeCAD.Placement(Vector(xpos, ypos, height), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
+                compound_list.append(stud)
     return compound_list
 
 
 
-def add_rectangular_brick_studs(brick_name):
+def add_brick_studs(brick_name):
     # Add the studs on top
     # create the studs and append each one to a compound_list
     return
@@ -287,6 +293,8 @@ def add_rectangular_brick_studs(brick_name):
             stud.Placement = FreeCAD.Placement(Vector(xpos, ypos, height), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
             compound_list.append(stud)
     return compound_list
+
+
 
 def add_brick_rings(brick_name):
     # Add the rings on the bottom of the brick
@@ -443,8 +451,8 @@ def make_brick_series(studs_x, studs_y_max, plate_z):
 ### Example: to create rectangle bricks
 ### Minimal size = 3 x 3
 ### make_rectangle_brick(hole_x, hole_y, studs_x, studs_y, plate_z)
-make_rectangle_brick(2,2,2,3,1)
-make_rectangle_brick(4,6,1,1,3)
+make_rectangle_brick(2,5,1,1,9)
+#make_rectangle_brick(4,6,1,1,3)
 
 
 
