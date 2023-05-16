@@ -131,8 +131,28 @@ def add_pocket_top_studs(pocket_tuple):
                 compound_list.append(stud)
     return compound_list
 
+def add_pocket_floor_studs(pocket_tuple):
+    # Add the studs on the inside floor of the pocket
+    # create the studs and append each one to a compound_list
+    compound_list=[]
+    pocket_name = pocket_tuple[0]
+    x = pocket_tuple[1] - 2
+    y = pocket_tuple[2] - 2
+    z = pocket_tuple[4]
+    height = z * plate_height_mm
+    for i in range(int(x)):
+        for j in range(int(y)):
+            stud = doc.addObject('Part::Feature','stud_template')
+            stud.Shape = doc.stud_template.Shape
+            stud.Label = "stud_" + pocket_name + '_' + str(i) + '_' + str(j)
+            xpos = ((i+2) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2) - (gap_mm / 2)
+            ypos = ((j+2) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2) - (gap_mm / 2)
+            stud.Placement = FreeCAD.Placement(Vector(xpos, ypos, height), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
+            compound_list.append(stud)
+    return compound_list
 
-def create_pocket(studs_x, studs_y, inner_height, floor_height):
+
+def create_pocket(studs_x, studs_y, inner_height, floor_height, inner_studs):
     # name the brick
     pocket_name = name_a_pocket(studs_x, studs_y, inner_height, floor_height)
     pocket_tuple = ( pocket_name, studs_x, studs_y, inner_height, floor_height )
@@ -140,7 +160,8 @@ def create_pocket(studs_x, studs_y, inner_height, floor_height):
     compound_list = []
     compound_list.append(create_pocket_hull(pocket_tuple))
     compound_list += add_pocket_top_studs(pocket_tuple)
-    #compound_list += add_pocket_floor_studs(pocket_name)
+    if inner_studs:
+        compound_list += add_pocket_floor_studs(pocket_tuple)
     # brick is finished, so create a compound object with the name of the brick
     obj = doc.addObject("Part::Compound", pocket_name)
     obj.Links = compound_list
@@ -161,10 +182,12 @@ def create_pocket(studs_x, studs_y, inner_height, floor_height):
 # studs_x = width of the open box
 # studs_y = length of the open box
 # inner_height = inner height of the box in number of (Lego) plates
-# floor_thickness = height of the floor in (Lego) plates
-#create_pocket(studs_x, studs_y, inner_height, floor_height)
+# floor_height = height of the floor in (Lego) plates
+# inner_studs_boolean = True if inner studs, False if inner flat floor
+#create_pocket(studs_x, studs_y, inner_height, floor_height, inner_studs_boolean)
 #create_pocket(6, 12, 6, 3)
-create_pocket(10, 20, 9, 3)
+create_pocket(10, 20, 9, 3, True)
+create_pocket(6, 12, 9, 3, False)
 
 
 doc.removeObject("stud_template")
