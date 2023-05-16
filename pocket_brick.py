@@ -72,10 +72,12 @@ def make_stud(name):
 stud_template = make_stud("stud_template")
 stud_template.ViewObject.hide()
 
-def name_a_pocket(studs_x, studs_y, inner_height, floor_height):
+def name_a_pocket(studs_x, studs_y, inner_height, floor_height, inner_studs):
     floor_name = '_floor_' + str(floor_height)
     inner_name = '_inner_' + str(inner_height)
     size_name  = '_size_'  + str(studs_x) + 'x' + str(studs_y)
+    if inner_studs:
+        inner_name += '_inner_studs_'
     name       = 'pocket_' + size_name + inner_name + floor_name 
     return name
 
@@ -154,7 +156,7 @@ def add_pocket_floor_studs(pocket_tuple):
 
 def create_pocket(studs_x, studs_y, inner_height, floor_height, inner_studs):
     # name the brick
-    pocket_name = name_a_pocket(studs_x, studs_y, inner_height, floor_height)
+    pocket_name = name_a_pocket(studs_x, studs_y, inner_height, floor_height, inner_studs)
     pocket_tuple = ( pocket_name, studs_x, studs_y, inner_height, floor_height )
     # compound list will contain: the hull, the studs
     compound_list = []
@@ -176,6 +178,7 @@ def create_pocket(studs_x, studs_y, inner_height, floor_height, inner_studs):
     export = []
     export.append(doc.getObject(pocket_name))
     Mesh.export(export, export_directory + pocket_name + ".stl")
+    obj.ViewObject.hide()
     #return obj
     
 
@@ -183,11 +186,10 @@ def create_pocket(studs_x, studs_y, inner_height, floor_height, inner_studs):
 # studs_y = length of the open box
 # inner_height = inner height of the box in number of (Lego) plates
 # floor_height = height of the floor in (Lego) plates
-# inner_studs_boolean = True if inner studs, False if inner flat floor
+# inner_studs_boolean = False if inner studs, False if inner flat floor
 #create_pocket(studs_x, studs_y, inner_height, floor_height, inner_studs_boolean)
-#create_pocket(6, 12, 6, 3)
-create_pocket(10, 20, 9, 3, True)
-create_pocket(6, 12, 9, 3, False)
+#create_pocket(8, 16, 6, 3, False)
+create_pocket(10, 16, 9, 3, True)
 
 
 doc.removeObject("stud_template")
