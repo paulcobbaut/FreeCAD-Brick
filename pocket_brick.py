@@ -97,7 +97,7 @@ def create_pocket_hull(pocket_tuple):
     inner_prism  = make_box("inner_prism", inner_width, inner_length, inner_height)
     # place the inner_prism at x and y exactly one stud thickness
     pocket_wall_mm = brick_width_mm + gap_mm
-    inner_prism.Placement = FreeCAD.Placement(Vector(pocket_wall_mm, pocket_wall_mm, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
+    inner_prism.Placement = FreeCAD.Placement(Vector(pocket_wall_mm, pocket_wall_mm, floor_height), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
     # now cut the inner part out of the outer part
     # hull = the pocket without studs and without rings
     hull = doc.addObject('Part::Cut', pocket_name + "_hull")
@@ -107,6 +107,30 @@ def create_pocket_hull(pocket_tuple):
     inner_prism.ViewObject.hide()
     return hull
     
+
+def add_pocket_top_studs(pocket_tuple):
+    # Add the studs on top
+    # create the studs and append each one to a compound_list
+    compound_list=[]
+    pocket_name = pocket_tuple[0]
+    studs_x = pocket_tuple[1]
+    studs_y = pocket_tuple[2]
+    hole_x = studs_x - 2       # pocket wall is one stud
+    hole_y = studs_y - 2
+    z = pocket_tuple[3] + pocket_tuple[4]
+    height = z * plate_height_mm
+    for i in range(int(studs_x)):
+        for j in range(int(studs_y)):
+            if ( (i < 1) or (i > hole_x) ) or ( (j < 1) or (j > hole_y) ):
+                stud = doc.addObject('Part::Feature','stud_template')
+                stud.Shape = doc.stud_template.Shape
+                stud.Label = "stud_" + pocket_name + '_' + str(i) + '_' + str(j)
+                xpos = ((i+1) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2) - (gap_mm / 2)
+                ypos = ((j+1) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2) - (gap_mm / 2)
+                stud.Placement = FreeCAD.Placement(Vector(xpos, ypos, height), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
+                compound_list.append(stud)
+    return compound_list
+
 
 def create_pocket(studs_x, studs_y, inner_height, floor_height):
     # name the brick
@@ -126,7 +150,7 @@ def create_pocket(studs_x, studs_y, inner_height, floor_height):
     part = doc.getObject(pocket_name)
     shape = Part.getShape(part,"")
     mesh.Mesh = MeshPart.meshFromShape(Shape=shape, LinearDeflection=0.1, AngularDeflection=0.0174533, Relative=False)
-    mesh.Label = 'Mesh_' + brick_name
+    mesh.Label = 'Mesh_' + pocket_name
     # upload .stl file
     export = []
     export.append(doc.getObject(pocket_name))
@@ -139,7 +163,8 @@ def create_pocket(studs_x, studs_y, inner_height, floor_height):
 # inner_height = inner height of the box in number of (Lego) plates
 # floor_thickness = height of the floor in (Lego) plates
 #create_pocket(studs_x, studs_y, inner_height, floor_height)
-create_pocket(6, 12, 6, 3)
+#create_pocket(6, 12, 6, 3)
+create_pocket(10, 20, 9, 3)
 
 
 doc.removeObject("stud_template")
