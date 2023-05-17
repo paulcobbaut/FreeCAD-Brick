@@ -156,6 +156,40 @@ def add_corner_brick_studs(brick_name):
                 compound_list.append(stud)
     return compound_list
 
+def add_corner_brick_rings(brick_name):
+    # Add the rings on the bottom of the brick
+    compound_list = []
+    left_l   = bricks[brick_name][0]
+    left_w   = bricks[brick_name][1]
+    bottom_l = bricks[brick_name][2]
+    bottom_h = bricks[brick_name][3]
+    z        = bricks[brick_name][4]
+    height   = z * plate_height_mm
+    # Create a template ring (all rings for a single brick are the same height)
+    outer_cylinder = doc.addObject("Part::Cylinder", "outer_cylinder")
+    outer_cylinder.Radius = ring_radius_outer_mm
+    outer_cylinder.Height = height - top_thickness_mm
+    inner_cylinder = doc.addObject("Part::Cylinder", "inner_cylinder")
+    inner_cylinder.Radius = ring_radius_inner_mm
+    inner_cylinder.Height = height - top_thickness_mm
+    ring_template = doc.addObject('Part::Cut', 'ring_template')
+    ring_template.Base = outer_cylinder
+    ring_template.Tool = inner_cylinder
+    doc.recompute()
+    # create the rings and append each one to the compound_list
+    for i in range(int(bottom_l + left_w - 1)):
+        for j in range(int(left_l - 1)):
+            if ((i < (left_w - 1)) or (j < (bottom_h - 1))):
+                ring = doc.addObject('Part::Feature','ring_template') 
+                ring.Shape = doc.ring_template.Shape 
+                ring.Label = 'ring_' + brick_name + str(i) + '_' + str(j)
+                xpos = (brick_width_mm + gap_mm) * (i + 1) - (gap_mm/2)
+                ypos = (brick_width_mm + gap_mm) * (j + 1) - (gap_mm/2)
+                ring.Placement = FreeCAD.Placement(Vector(xpos, ypos, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
+                compound_list.append(ring)
+    ring_template.ViewObject.hide()
+    return compound_list
+
 
 def make_corner_brick(left_length, left_width, bottom_lenght, bottom_height, plate_z):
     # name the brick
@@ -164,8 +198,8 @@ def make_corner_brick(left_length, left_width, bottom_lenght, bottom_height, pla
     compound_list = []
     compound_list.append(create_corner_hull(brick_name))
     compound_list += add_corner_brick_studs(brick_name)
+    compound_list += add_corner_brick_rings(brick_name)
     return
-    compound_list += add_rectangular_brick_rings(brick_name)
     # brick is finished, so create a compound object with the name of the brick
     obj = doc.addObject("Part::Compound", brick_name)
     obj.Links = compound_list
@@ -196,7 +230,7 @@ def make_corner_brick(left_length, left_width, bottom_lenght, bottom_height, pla
 # L has bottom part _
 # the corner is shared by both parts
 #make_corner_brick(length_left, width_left, length_bottom, height_bottom, plate_z)
-make_corner_brick(6, 2, 3, 1, 3)
+make_corner_brick(13, 3, 8, 4, 3)
 
 ### Example: to create single bricks
 ### make_brick(width_in_studs, length_in_studs, height_in_plates)
