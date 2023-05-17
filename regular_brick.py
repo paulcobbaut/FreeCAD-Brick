@@ -39,6 +39,7 @@ offset = 0
 
 # The directory to export the .stl files to
 export_directory = "/home/paul/FreeCAD/generated_bricks/"
+#export_directory = "C:\" for Windows, not tested.
 
 
 import FreeCAD
@@ -442,9 +443,6 @@ def make_rectangle_brick(hole_x, hole_y, side_x, side_y, plate_z):
     # compound list will contain: the hull, the studs, the rings
     compound_list = []
     compound_list.append(create_rectangular_brick_hull(brick_name))
-    # --- YOU ARE HERE ---
-    doc.recompute()
-    FreeCADGui.ActiveDocument.ActiveView.fitAll()
     compound_list += add_rectangular_brick_studs(brick_name)
     compound_list += add_rectangular_brick_rings(brick_name)
     # brick is finished, so create a compound object with the name of the brick
@@ -481,13 +479,9 @@ def make_brick_series(studs_x, studs_y_max, plate_z):
 #make_brick(2, 4, 3) # creates the common 2x4 brick
 #make_brick(2, 6, 1) # creates a 2x6 plate
 #make_brick(4, 4, 2) # creates a 4x4 plick
-#make_brick(4, 5, 3)
-#make_brick(5, 9, 3)
+make_brick(4, 5, 3)
+make_brick(5, 9, 3)
 make_brick(4, 4, 1)
-make_brick(6, 6, 2)
-make_brick(8, 8, 3)
-make_brick(4, 8, 3)
-make_brick(2, 8, 6)
 
 ### Example: to create a series of bricks
 ### make_brick_series(width_in_studs, max_length_in_studs, heigth_in_plates)
@@ -495,23 +489,20 @@ make_brick(2, 8, 6)
 #make_brick_series(7, 9, 3) # create a 7x7, a 7x8, and a 7x9 brick
 #make_brick_series(4, 8, 1) # creates five plates
 #make_brick_series(12, 42, 3) # takes some time to compute so be patient or use smaller numbers
-#make_brick_series(3,8,8)
-make_brick_series(1,10,1)
-make_brick_series(2,10,1)
-make_brick_series(1,10,3)
-make_brick_series(2,10,3)
+make_brick_series(3,8,8)
+make_brick_series(2,8,1)
 
 ### Example: to create rectangle bricks
 ### Minimal size = 3 x 3 (a 1x1 hole with 1 stud on all sides)
 ### make_rectangle_brick(hole_x, hole_y, studs_x, studs_y, plate_z)
 #make_rectangle_brick(1,1,1,1,1) # this is the smallest possible
 #make_rectangle_brick(1,1,0,0,1) # seems to work, kinda pointless imho
-make_rectangle_brick(3,4,4,2,3) # total width = 3+2+2 (studs_x on both sides)
-make_rectangle_brick(2,1,2,1,3)
-make_rectangle_brick(2,2,0,2,1)
-make_rectangle_brick(2,2,1,1,1)
-make_rectangle_brick(4,1,2,2,3)
-make_rectangle_brick(2,5,4,2,3)
+#make_rectangle_brick(3,4,4,2,3) # total width = 3+2+2 (studs_x on both sides)
+make_rectangle_brick(3,3,1,1,3)
+make_rectangle_brick(4,3,2,2,1)
+make_rectangle_brick(5,5,1,1,1)
+make_rectangle_brick(1,6,2,2,3)
+make_rectangle_brick(2,3,2,3,13)
 
 
 
