@@ -190,6 +190,7 @@ def create_pocket(studs_x, studs_y, inner_height, floor_height, inner_studs):
 #create_pocket(studs_x, studs_y, inner_height, floor_height, inner_studs_boolean)
 #create_pocket(8, 16, 6, 3, False)
 create_pocket(10, 16, 9, 3, True)
+create_pocket(10, 5, 6, 3, False)
 
 
 doc.removeObject("stud_template")
