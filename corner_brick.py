@@ -1,5 +1,5 @@
 """
-regular_brick.py -- Paul Cobbaut, 2023-05-17
+corner_brick.py -- Paul Cobbaut, 2023-05-17
 The goal is to make Lego-compatible pieces for use in 3D printer
 The script generates .stl files in a directory.
 """
@@ -156,6 +156,7 @@ def add_corner_brick_studs(brick_name):
                 compound_list.append(stud)
     return compound_list
 
+
 def add_corner_brick_rings(brick_name):
     # Add the rings on the bottom of the brick
     compound_list = []
@@ -187,31 +188,29 @@ def add_corner_brick_rings(brick_name):
                 ypos = (brick_width_mm + gap_mm) * (j + 1) - (gap_mm/2)
                 ring.Placement = FreeCAD.Placement(Vector(xpos, ypos, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
                 compound_list.append(ring)
+    # clean up
     ring_template.ViewObject.hide()
+    doc.removeObject("ring_template")
+    doc.removeObject("outer_cylinder")
+    doc.removeObject("inner_cylinder")
     return compound_list
 
 
-def make_corner_brick(left_length, left_width, bottom_lenght, bottom_height, plate_z):
+def make_corner_brick(left_length, left_width, bottom_length, bottom_height, plate_z):
     # name the brick
-    brick_name = name_a_corner_brick(left_length, left_width, bottom_lenght, bottom_height, plate_z)
+    brick_name = name_a_corner_brick(left_length, left_width, bottom_length, bottom_height, plate_z)
     # compound list will contain: the hull, the studs, the rings
     compound_list = []
     compound_list.append(create_corner_hull(brick_name))
     compound_list += add_corner_brick_studs(brick_name)
     compound_list += add_corner_brick_rings(brick_name)
-    return
     # brick is finished, so create a compound object with the name of the brick
     obj = doc.addObject("Part::Compound", brick_name)
     obj.Links = compound_list
     # Put it next to the previous objects (instead of all at 0,0)
     global offset
     obj.Placement = FreeCAD.Placement(Vector((brick_width_mm * offset), 0, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
-    offset += side_x + side_x + hole_x + 1
-    #
-    # clean up
-    doc.removeObject("ring_template")
-    doc.removeObject("outer_cylinder")
-    doc.removeObject("inner_cylinder")
+    offset += left_width + bottom_length + 1
     # create mesh from shape (compound)
     doc.recompute()
     mesh = doc.addObject("Mesh::Feature","Mesh")
@@ -223,33 +222,17 @@ def make_corner_brick(left_length, left_width, bottom_lenght, bottom_height, pla
     export = []
     export.append(doc.getObject(brick_name))
     Mesh.export(export, export_directory + brick_name + ".stl")
-    
+    # return mesh    
+
 
 # corner resembles L
 # L has left part |
 # L has bottom part _
-# the corner is shared by both parts
+# the corner is part of the left |
 #make_corner_brick(length_left, width_left, length_bottom, height_bottom, plate_z)
-make_corner_brick(13, 3, 8, 4, 3)
-
-### Example: to create single bricks
-### make_brick(width_in_studs, length_in_studs, height_in_plates)
-#make_brick(2, 4, 3) # creates the common 2x4 brick
-#make_brick(2, 6, 1) # creates a 2x6 plate
-#make_brick(4, 4, 2) # creates a 4x4 plick
-
-### Example: to create a series of bricks
-### make_brick_series(width_in_studs, max_length_in_studs, heigth_in_plates)
-### length starts at width
-#make_brick_series(7, 9, 3) # create a 7x7, a 7x8, and a 7x9 brick
-#make_brick_series(4, 8, 1) # creates five plates
-#make_brick_series(12, 42, 3) # takes some time to compute so be patient or use smaller numbers
-
-### Example: to create rectangle bricks
-### Minimal size = 3 x 3 (a 1x1 hole with 1 stud on all sides)
-### make_rectangle_brick(hole_x, hole_y, studs_x, studs_y, plate_z)
-#make_rectangle_brick(1,1,1,1,1) # this is the smallest possible
-#make_rectangle_brick(1,1,0,0,1) # seems to work, kinda pointless imho
+make_corner_brick(3, 1, 2, 2, 1)
+make_corner_brick(10, 4, 4, 2, 3)
+make_corner_brick(8, 2, 6, 2, 3)
 
 doc.removeObject("stud_template")
 doc.recompute()
