@@ -230,9 +230,11 @@ def make_corner_brick(left_length, left_width, bottom_length, bottom_height, pla
 # L has bottom part _
 # the corner is part of the left |
 #make_corner_brick(length_left, width_left, length_bottom, height_bottom, plate_z)
+make_corner_brick(9, 1, 4, 1, 1)
 make_corner_brick(3, 1, 2, 2, 1)
 make_corner_brick(10, 4, 4, 2, 3)
-make_corner_brick(8, 2, 6, 2, 3)
+make_corner_brick(12, 2, 4, 4, 3)
+make_corner_brick(8, 2, 6, 2, 6)
 
 doc.removeObject("stud_template")
 doc.recompute()
