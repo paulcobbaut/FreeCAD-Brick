@@ -101,13 +101,11 @@ def create_corner_hull(brick_name):
     outer_bottom_l = convert_studs_to_mm(bottom_l + left_w) # include corner
     outer_bottom_h = convert_studs_to_mm(bottom_h)
     outer_bottom_prism = make_box("outer_bottom_prism", outer_bottom_l, outer_bottom_h, height)
-    # unite these two parts
+    # fuse these two parts
     outer_corner = doc.addObject('Part::Fuse', brick_name + "_outer")
     outer_corner.Base = outer_left_prism
     outer_corner.Tool = outer_bottom_prism
-
-    # create the inner cutout for both parts and unite them
-    # cut the inner cutout from the outer one
+    # create the inner cutout for both parts and fuse them
     inner_height = height - top_thickness_mm
     inner_left_w = outer_left_w - (2 * wall_thickness_mm)
     inner_left_l = outer_left_l - (2 * wall_thickness_mm)
@@ -136,6 +134,28 @@ def create_corner_hull(brick_name):
     return hull
 
 
+def add_corner_brick_studs(brick_name):
+    # Add the studs on top
+    # create the studs and append each one to a compound_list
+    left_l   = bricks[brick_name][0]
+    left_w   = bricks[brick_name][1]
+    bottom_l = bricks[brick_name][2]
+    bottom_h = bricks[brick_name][3]
+    z        = bricks[brick_name][4]
+    height   = z * plate_height_mm
+    compound_list=[]
+    for i in range(int(bottom_l + left_w)):
+        for j in range(int(left_l)):
+            if ((i < left_w) or (j < bottom_h)):
+                stud = doc.addObject('Part::Feature','stud_template')
+                stud.Shape = doc.stud_template.Shape
+                stud.Label = "stud_" + brick_name + '_' + str(i) + '_' + str(j)
+                xpos = ((i+1) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2) - (gap_mm / 2)
+                ypos = ((j+1) * stud_center_spacing_mm) - (stud_center_spacing_mm / 2) - (gap_mm / 2)
+                stud.Placement = FreeCAD.Placement(Vector(xpos, ypos, height), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
+                compound_list.append(stud)
+    return compound_list
+
 
 def make_corner_brick(left_length, left_width, bottom_lenght, bottom_height, plate_z):
     # name the brick
@@ -143,8 +163,8 @@ def make_corner_brick(left_length, left_width, bottom_lenght, bottom_height, pla
     # compound list will contain: the hull, the studs, the rings
     compound_list = []
     compound_list.append(create_corner_hull(brick_name))
+    compound_list += add_corner_brick_studs(brick_name)
     return
-    compound_list += add_rectangular_brick_studs(brick_name)
     compound_list += add_rectangular_brick_rings(brick_name)
     # brick is finished, so create a compound object with the name of the brick
     obj = doc.addObject("Part::Compound", brick_name)
