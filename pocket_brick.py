@@ -176,7 +176,7 @@ def create_pocket(studs_x, studs_y, inner_height, floor_height, inner_studs):
     mesh.Label = 'Mesh_' + pocket_name
     # upload .stl file
     export = []
-    export.append(doc.getObject(pocket_name))
+    export.append(mesh)
     Mesh.export(export, export_directory + pocket_name + ".stl")
     obj.ViewObject.hide()
     #return obj
@@ -189,8 +189,8 @@ def create_pocket(studs_x, studs_y, inner_height, floor_height, inner_studs):
 # inner_studs_boolean = False if inner studs, False if inner flat floor
 #create_pocket(studs_x, studs_y, inner_height, floor_height, inner_studs_boolean)
 #create_pocket(8, 16, 6, 3, False)
-create_pocket(10, 16, 9, 3, True)
-create_pocket(10, 5, 6, 3, False)
+create_pocket(12, 22, 9, 3, True)
+create_pocket(9, 6, 6, 3, False)
 
 
 doc.removeObject("stud_template")

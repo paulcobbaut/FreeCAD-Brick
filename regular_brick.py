@@ -243,7 +243,7 @@ def make_brick(studs_x, studs_y, plate_z):
     mesh.Label = 'Mesh_' + brick_name
     # upload .stl file
     export = []
-    export.append(doc.getObject(brick_name))
+    export.append(mesh)
     Mesh.export(export, export_directory + brick_name + ".stl")
     #return obj
 

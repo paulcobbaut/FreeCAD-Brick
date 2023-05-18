@@ -220,7 +220,7 @@ def make_corner_brick(left_length, left_width, bottom_length, bottom_height, pla
     mesh.Label = 'Mesh_' + brick_name
     # upload .stl file
     export = []
-    export.append(doc.getObject(brick_name))
+    export.append(mesh)
     Mesh.export(export, export_directory + brick_name + ".stl")
     # return mesh    
 
