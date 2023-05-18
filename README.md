@@ -38,8 +38,9 @@ This is a must do or you get an error!!!
 
 Somewhere around line 37 to 41 in the scripts there are lines like this:
 
-### The directory to export the .stl files to
-export_directory = "/home/paul/FreeCAD/generated_bricks/"
+
+  ### The directory to export the .stl files to
+  export_directory = "/home/paul/FreeCAD/generated_bricks/"
 
 This is the location where the .stl files are written on your computer. This directory (or folder) must already exist before running the script!
 
