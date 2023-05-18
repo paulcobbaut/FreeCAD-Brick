@@ -29,6 +29,7 @@ ring_radius_inner_mm	= 2.500		# was 2.666 pm 1029, 2.456 on 20220930, 2.556 on 2
 
 # Dimensions for slopes
 slope_start_height_mm   = 1.600
+roof_thickness_mm	= 1.000		# the 'roof' of a sloped tile
 
 # Dictionary of bricks generated; name:(studs_x, studs_y, plate_z) --> (width, length, height)
 bricks = {}
@@ -201,56 +202,6 @@ def add_brick_rings(brick_name):
     return compound_list
 
 
-###
-# Make a brick:
-# studs_x 	--> width is in number of studs
-# studs_y 	--> length is in number of studs
-# plate_z 	--> height is in number of standard plate heights
-#
-# Examples:
-# a standard 2x4 plate has (2, 4, 1) as parameters
-# a standard 2x4 brick has (2 ,4, 3) as parameters
-# a very long 1x16 plate has (1, 16, 1) as parameters
-# a very wide 8x12 plick has (8, 12, 2) as parameters
-#
-# Important note:
-# studs_y >= studs_x 
-# a 4x2 brick does not exist!
-# always put the smallest digit first!
-###
-def make_brick(studs_x, studs_y, plate_z):
-    # Exit if studs_y is smaller than studs_x
-    if studs_y < studs_x:
-        print('ERROR: make_brick(): studs_y (', studs_y, ') cannot be smaller than studs_x (', studs_x, ')')
-        return
-    # name the brick
-    brick_name = name_a_brick(studs_x, studs_y, plate_z)
-    # compound list will contain: the hull, the studs, the rings
-    compound_list = []
-    compound_list.append(create_brick_hull(brick_name))
-    compound_list += add_brick_studs(brick_name)
-    compound_list += add_brick_rings(brick_name)
-    # brick is finished, so create a compound object with the name of the brick
-    obj = doc.addObject("Part::Compound", brick_name)
-    obj.Links = compound_list
-    # Put it next to the previous objects (instead of all at 0,0)
-    global offset
-    obj.Placement = FreeCAD.Placement(Vector((brick_width_mm * offset), 0, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
-    offset += studs_x + 1
-    # create mesh from shape (compound)
-    doc.recompute()
-    mesh = doc.addObject("Mesh::Feature","Mesh")
-    part = doc.getObject(brick_name)
-    shape = Part.getShape(part,"")
-    mesh.Mesh = MeshPart.meshFromShape(Shape=shape, LinearDeflection=0.1, AngularDeflection=0.0174533, Relative=False)
-    mesh.Label = 'Mesh_' + brick_name
-    # upload .stl file
-    export = []
-    export.append(doc.getObject(brick_name))
-    Mesh.export(export, export_directory + brick_name + ".stl")
-    #return obj
-
-
 # creates a sketch to cut from the (to be) slope brick
 def create_slope_cutout(brick_name):
     width_bottom   = convert_studs_to_mm(bricks[brick_name][0])
@@ -259,21 +210,63 @@ def create_slope_cutout(brick_name):
     width_topstuds = convert_studs_to_mm(bricks[brick_name][3])
     BodyLabel   = 'Body_'   + brick_name
     SketchLabel = 'Sketch_' + brick_name
+    PadLabel    = 'Pad_'    + brick_name
     # create Body and Sketch Object
     Body_obj   = doc.addObject("PartDesign::Body", BodyLabel)
     Sketch_obj = doc.getObject(BodyLabel).newObject("Sketcher::SketchObject", SketchLabel)
-    #Sketch_obj.AttachmentOffset = FreeCAD.Placement(FreeCAD.Vector(1, 0, 0),  FreeCAD.Rotation(1, 0, 0))
     Sketch_obj.AttachmentSupport = [(doc.getObject('XZ_Plane'),'')]
     Sketch_obj.Placement = FreeCAD.Placement(Vector(0,0,0),FreeCAD.Rotation(Vector(1,0,0),90.000))
     # create points
-    point0 = App.Vector(width_bottom  , slope_start_height_mm, 0)
-    point1 = App.Vector(width_bottom  , height               , 0)
-    point2 = App.Vector(width_topstuds, height               , 0)
+    point0 = App.Vector(width_bottom  , slope_start_height_mm  , 0)
+    point1 = App.Vector(width_bottom  , height + stud_height_mm, 0)
+    point2 = App.Vector(width_topstuds, height + stud_height_mm, 0)
+    point3 = App.Vector(width_topstuds, height                 , 0)
     # create lines that kinda surround a fork
     Sketch_obj.addGeometry(Part.LineSegment(point0,point1),False)
     Sketch_obj.addGeometry(Part.LineSegment(point1,point2),False)
-    Sketch_obj.addGeometry(Part.LineSegment(point2,point0),False)
-    return Sketch_obj
+    Sketch_obj.addGeometry(Part.LineSegment(point2,point3),False)
+    Sketch_obj.addGeometry(Part.LineSegment(point3,point0),False)
+    # create Pad Object
+    Pad_obj = doc.getObject(BodyLabel).newObject('PartDesign::Pad',PadLabel)
+    Pad_obj.Profile = doc.getObject(SketchLabel)
+    Pad_obj.Length = length
+    Pad_obj.Label = PadLabel
+    Pad_obj.Reversed = 1
+    doc.getObject(SketchLabel).Visibility = False
+    return Pad_obj
+
+# creates a sketch to fuse to the (to be) slope brick
+def create_slope_roof(brick_name):
+    width_bottom   = convert_studs_to_mm(bricks[brick_name][0])
+    length         = convert_studs_to_mm(bricks[brick_name][1])
+    height         = bricks[brick_name][2] * plate_height_mm
+    width_topstuds = convert_studs_to_mm(bricks[brick_name][3])
+    BodyLabel   = 'Body_'   + brick_name + 'roof'
+    SketchLabel = 'Sketch_' + brick_name + 'roof'
+    PadLabel    = 'Pad_'    + brick_name + 'roof'
+    # create Sketch Object
+    Body_obj   = doc.addObject("PartDesign::Body", BodyLabel)
+    Sketch_obj = doc.getObject(BodyLabel).newObject("Sketcher::SketchObject", SketchLabel)
+    Sketch_obj.AttachmentSupport = [(doc.getObject('XZ_Plane'),'')]
+    Sketch_obj.Placement = FreeCAD.Placement(Vector(0,0,0),FreeCAD.Rotation(Vector(1,0,0),90.000))
+    # create points
+    point0 = App.Vector(width_bottom  , slope_start_height_mm                    , 0)
+    point1 = App.Vector(width_topstuds, height                                   , 0)
+    point2 = App.Vector(width_topstuds, height                - roof_thickness_mm, 0)
+    point3 = App.Vector(width_bottom  , slope_start_height_mm - roof_thickness_mm, 0)
+    # create lines that kinda surround a fork
+    Sketch_obj.addGeometry(Part.LineSegment(point0,point1),False)
+    Sketch_obj.addGeometry(Part.LineSegment(point1,point2),False)
+    Sketch_obj.addGeometry(Part.LineSegment(point2,point3),False)
+    Sketch_obj.addGeometry(Part.LineSegment(point3,point0),False)
+    # create Pad Object
+    Pad_obj = doc.getObject(BodyLabel).newObject('PartDesign::Pad',PadLabel)
+    Pad_obj.Profile = doc.getObject(SketchLabel)
+    Pad_obj.Length = length
+    Pad_obj.Label = PadLabel
+    Pad_obj.Reversed = 1
+    doc.getObject(SketchLabel).Visibility = False
+    return Pad_obj
 
 
 def make_slope_brick(studs_x, studs_y, plate_z, studs_t):
@@ -285,18 +278,48 @@ def make_slope_brick(studs_x, studs_y, plate_z, studs_t):
     compound_list += add_brick_studs(brick_name)
     compound_list += add_brick_rings(brick_name)
     # brick is finished, so create a compound object with the name of the brick
-    obj = doc.addObject("Part::Compound", brick_name)
-    obj.Links = compound_list
-    # cutout
-    Sketch = create_slope_cutout(brick_name)
-    #Pad_spoon13 = create_Pad('spoon13')
-    #Fillet_spoon13 = create_Fillet('spoon13')
+    tmp_brick = doc.addObject("Part::Compound", brick_name)
+    tmp_brick.Links = compound_list
+    # create the cutout
+    cutout_pad = create_slope_cutout(brick_name)
+    # cut the pad from the brick
+    open_slope = doc.addObject('Part::Cut', brick_name + "_open")
+    open_slope.Base = tmp_brick
+    open_slope.Tool = cutout_pad
+    # create the roof
+    roof_pad = create_slope_roof(brick_name)
+    # fuse the roof on the open brick
+    slope = doc.addObject('Part::Fuse', brick_name + "_finished")
+    slope.Base = open_slope
+    slope.Tool = roof_pad
+    # Put it next to the previous objects (instead of all at 0,0)
+    global offset
+    slope.Placement = FreeCAD.Placement(Vector((brick_width_mm * offset), 0, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
+    offset += studs_x + 1
+    # create mesh from shape (compound)
+    doc.recompute()
+    mesh = doc.addObject("Mesh::Feature","Mesh")
+    part = slope
+    shape = Part.getShape(part,"")
+    mesh.Mesh = MeshPart.meshFromShape(Shape=shape, LinearDeflection=0.1, AngularDeflection=0.0174533, Relative=False)
+    mesh.Label = 'Mesh_' + brick_name
+    # upload .stl file
+    export = []
+    export.append(mesh)
+    Mesh.export(export, export_directory + brick_name + ".stl")
     return
 
 
 ### Example: to create single slope bricks
 ### make_slope_brick(width_in_studs, length_in_studs, height_in_plates, studded_width)
 make_slope_brick(2, 2, 3, 1) # standard slope, bottom 2x2, top half 2x1 studs and half slope
+make_slope_brick(9, 2, 3, 1) 
+make_slope_brick(5, 9, 3, 4) 
+make_slope_brick(4, 2, 3, 1) 
+make_slope_brick(3, 3, 3, 1) 
+make_slope_brick(6, 1, 3, 1) 
+make_slope_brick(6, 3, 3, 4) 
+make_slope_brick(4, 4, 6, 2) 
 
 
 doc.removeObject("stud_template")
