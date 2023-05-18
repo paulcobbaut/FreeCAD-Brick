@@ -80,38 +80,6 @@ def make_stud(name):
 stud_template = make_stud("stud_template")
 stud_template.ViewObject.hide()
 
-# name a brick or plate
-def name_a_brick(studs_x, studs_y, plate_z):
-    #
-    # Name a brick, plick or plate using the number of studs
-    # thickness: 1 = plate, 2 = plick, 3 = brick
-    # name plate/plick/brick is followed by
-    # - number of studs X
-    # - number of studs Y
-    # - thickness in plates Z
-    #
-    if plate_z == 1:
-    # plate
-        name = 'plate_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
-    elif plate_z == 2:
-    # plick
-        name = 'plick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
-    elif plate_z % 3 == 0:
-    # brick (all multiples of 3 are bricks)
-        if plate_z == 3:
-            name = 'brick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
-        elif plate_z == 6:
-            name = 'doublebrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
-        elif plate_z == 9:
-            name = 'triplebrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
-        elif plate_z == 12:
-            name = 'quadruplebrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
-        else:
-            name = 'xbrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
-    else:
-        name = 'xplate_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(plate_z)
-    bricks[name] = (studs_x, studs_y, plate_z)
-    return name
 
 def name_a_slope_brick(studs_x, studs_y, plate_z, studs_t):
     name = 'slope_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(plate_z) + '_top_' + str(studs_t)
