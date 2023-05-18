@@ -1,7 +1,6 @@
 ## FreeCAD-Brick
 Creating Lego compatible bricks using FreeCAD and Python
-
-This is a work in progress.
+![cover_20230518_all](https://github.com/paulcobbaut/FreeCAD-Brick/assets/524195/c28b69c3-1377-44be-9013-bbd45a20d1ee)
 
 ### What kind of (Lego-compatible) bricks?
 Thousands of different regular bricks (any width, any length, any height)
