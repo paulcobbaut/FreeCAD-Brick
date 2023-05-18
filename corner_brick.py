@@ -81,7 +81,8 @@ stud_template.ViewObject.hide()
 def name_a_corner_brick(left_length, left_width, bottom_length, bottom_height, plate_z):
     left_name   = '_left_' + str(left_length) + 'x' + str(left_width)
     bottom_name = '_bottom_' + str(bottom_length) + 'x' + str(bottom_height)
-    name         = 'cornerbrick_' + left_name + bottom_name
+    height_name = '_height_' + str(plate_z)
+    name         = 'cornerbrick' + left_name + bottom_name + height_name
     bricks[name] = (left_length, left_width, bottom_length, bottom_height, plate_z)
     return name
 
@@ -235,6 +236,7 @@ make_corner_brick(3, 1, 2, 2, 1)
 make_corner_brick(10, 4, 4, 2, 3)
 make_corner_brick(12, 2, 4, 4, 3)
 make_corner_brick(8, 2, 6, 2, 6)
+
 
 doc.removeObject("stud_template")
 doc.recompute()
