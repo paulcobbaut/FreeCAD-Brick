@@ -188,8 +188,8 @@ def create_pocket(studs_x, studs_y, inner_height, floor_height, inner_studs):
 # floor_height = height of the floor in (Lego) plates
 # inner_studs_boolean = False if inner studs, False if inner flat floor
 #create_pocket(studs_x, studs_y, inner_height, floor_height, inner_studs_boolean)
-#create_pocket(8, 16, 6, 3, False)
-create_pocket(12, 22, 9, 3, True)
+#create_pocket(16, 8, 6, 3, False)
+create_pocket(22, 12, 9, 3, True)
 create_pocket(9, 6, 6, 3, False)
 
 
