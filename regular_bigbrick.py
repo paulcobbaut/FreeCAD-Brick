@@ -71,7 +71,6 @@ def make_studring_template(name):
     inner = doc.addObject("Part::Cylinder", "inner_studring_template")
     inner.Radius = studring_radius_mm - studring_wall_mm
     inner.Height = studring_height_mm
-    doc.recompute()
     # cut inner cylinder out of outer cylinder = ring
     studring = doc.addObject('Part::Cut', "studring")
     studring.Base = outer
@@ -87,14 +86,34 @@ def make_studring_template(name):
 
 # creating the template
 studring_template = make_studring_template("studring_template")
+studring_template.ViewObject.hide()
+
+def make_cone():
+    # sketch for bottom circle
+    Sketch_bc = doc.getObject('Body').newObjectAt('Sketcher::SketchObject', 'Sketch_bc')
+    Sketch_bc.AttachmentSupport = [(doc.getObject('XY_Plane'),'')]
+    #Sketch_obj.Placement = FreeCAD.Placement(Vector(0,0,0),FreeCAD.Rotation(Vector(0,0,0),0))
+    doc.getObject('Sketch_bc').addGeometry(Part.Circle(App.Vector(0,0,0),App.Vector(0,0,1),30),False)
+    # sketch for top circle
+    Sketch_tc = doc.getObject('Body').newObjectAt('Sketcher::SketchObject', 'Sketch_tc')
+    Sketch_tc.AttachmentSupport = [(doc.getObject('XY_Plane'),'')]
+    Sketch_tc.Placement = FreeCAD.Placement(Vector(0,0,40),FreeCAD.Rotation(Vector(0,0,0),0))
+    doc.getObject('Sketch_tc').addGeometry(Part.Circle(App.Vector(0,0,0),App.Vector(0,0,1),50),False)
+    # loft both circles
+    coneloft = doc.addObject('Part::Loft','coneloft')
+    coneloft.Sections = [Sketch_bc, Sketch_tc, ]
+    coneloft.Solid=True
+    coneloft.Closed=False
+
+
+
+
+make_cone()
+
 
 doc.recompute()
 FreeCADGui.ActiveDocument.ActiveView.fitAll()
 pause
-
-studring_template.ViewObject.hide()
-
-
 
 # name a brick or plate
 def name_a_brick(studs_x, studs_y, plate_z):
