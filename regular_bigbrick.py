@@ -90,20 +90,24 @@ studring_template.ViewObject.hide()
 
 def make_cone():
     # sketch for bottom circle
-    Sketch_bc = doc.getObject('Body').newObjectAt('Sketcher::SketchObject', 'Sketch_bc')
-    Sketch_bc.AttachmentSupport = [(doc.getObject('XY_Plane'),'')]
+    Sketch_bc = doc.getObject('Body').newObject('Sketcher::SketchObject', 'Sketch_bc')
+    Sketch_bc.Support = [(doc.getObject('XY_Plane'),'')]
     #Sketch_obj.Placement = FreeCAD.Placement(Vector(0,0,0),FreeCAD.Rotation(Vector(0,0,0),0))
     doc.getObject('Sketch_bc').addGeometry(Part.Circle(App.Vector(0,0,0),App.Vector(0,0,1),30),False)
     # sketch for top circle
-    Sketch_tc = doc.getObject('Body').newObjectAt('Sketcher::SketchObject', 'Sketch_tc')
-    Sketch_tc.AttachmentSupport = [(doc.getObject('XY_Plane'),'')]
+    Sketch_tc = doc.getObject('Body').newObject('Sketcher::SketchObject', 'Sketch_tc')
+    Sketch_tc.Support = [(doc.getObject('XY_Plane'),'')]
     Sketch_tc.Placement = FreeCAD.Placement(Vector(0,0,40),FreeCAD.Rotation(Vector(0,0,0),0))
     doc.getObject('Sketch_tc').addGeometry(Part.Circle(App.Vector(0,0,0),App.Vector(0,0,1),50),False)
     # loft both circles
-    coneloft = doc.addObject('Part::Loft','coneloft')
-    coneloft.Sections = [Sketch_bc, Sketch_tc, ]
-    coneloft.Solid=True
-    coneloft.Closed=False
+    Loft = doc.getObject('Body').newObject('PartDesign::AdditiveLoft','Loft')
+    Loft.Profile = doc.getObject('Sketch_bc')
+    Loft.Sections = [ doc.getObject('Sketch_tc'),  ]
+
+    #coneloft = doc.addObject('PartDesign::SubtractiveLoft','coneloft')
+    #coneloft.Sections = [Sketch_bc, Sketch_tc, ]
+    #coneloft.Solid=True
+    #coneloft.Closed=False
 
 
 
