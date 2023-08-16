@@ -1,9 +1,10 @@
 """
-regular_bigbrick.py -- Paul Cobbaut, 2023-06-01
+regular_bigbrick.py -- Paul Cobbaut, 2023-06-01 - 2023-08-16
 The goal is to make Duplo-compatible bricks for use in 3D printer
 The script generates .stl files in a directory.
 """
 # Dimensions for stud rings
+# These are the studs on top of the Duplo-compatible bigbrick
 studring_radius_mm	= 4.800		# Was 4.950 before 2023-08-10, Duplo official is 4.800
 studring_height_mm	= 4.000		# Was 3.400 before 2023-08-10, Duplo official is 3.200
 studring_wall_mm	= 1.200		# Was 2.000 before 2023-08-10
@@ -22,8 +23,15 @@ bigwall_thickness_mm	= 3.000
 bigtop_thickness_mm     = 2.000		# the 'ceiling' of a brick is thinner than the sides
 
 # Dimensions underside rings
+# These are the cylinders center on the underside of bigbricks
 ring_radius_outer_mm	= 6.750     # was 6.500 before 2023-08-10
 ring_radius_inner_mm	= 5.300     # was 5.000 before 2023-08-10
+
+# Dimensions for underside cones
+# These enable 3D printing of the bigbrick 'ceiling' without supports
+cone_smallradius_mm     = 6.000
+cone_bigradius_mm       = 14.000
+cone_height_mm          = 9.000
 
 # Dictionary of bricks generated; name:(studs_x, studs_y, plate_z) --> (width, length, height)
 bigbricks = {}
@@ -49,6 +57,7 @@ def make_box(name, x, y, z):
     obj.Height = z
     return obj
 
+
 # convert studs to mm for bricks and plates
 # one stud on brick	= 1 * brick_width_mm
 # two studs on brick	= 2 * brick_width_mm + 1 * gap_mm
@@ -57,6 +66,7 @@ def make_box(name, x, y, z):
 def convert_studs_to_mm(studs):
     mm = (studs * bigbrick_width_mm) + ((studs - 1) * gap_mm)
     return mm
+
 
 # the studring template is created once then always copied
 def make_studring_template(name):
@@ -79,39 +89,36 @@ def make_studring_template(name):
     edges.append((3,0.35,0.35))
     edges.append((5,0.35,0.35))
     fillet.Edges = edges
+    ## Note that edges 3 and 5 were discoverd from GUI. There is little guarantee this will work in the future.
     doc.recompute()
     return fillet
 
-def make_cone(smallradius, bigradius, height):
+
+def make_cone_template(name):
     # sketch for bottom circle
     Sketch_bc = doc.getObject('Body').newObject('Sketcher::SketchObject', 'Sketch_bc')
     Sketch_bc.Support = [(doc.getObject('XY_Plane'),'')]
     #Sketch_bc.Placement = FreeCAD.Placement(Vector(0,0,0),FreeCAD.Rotation(Vector(0,0,0),0))
-    doc.getObject('Sketch_bc').addGeometry(Part.Circle(App.Vector(0,0,0),App.Vector(0,0,1),smallradius),False)
+    doc.getObject('Sketch_bc').addGeometry(Part.Circle(App.Vector(0,0,0),App.Vector(0,0,1),cone_smallradius_mm),False)
     # sketch for top circle
     Sketch_tc = doc.getObject('Body').newObject('Sketcher::SketchObject', 'Sketch_tc')
     Sketch_tc.Support = [(doc.getObject('XY_Plane'),'')]
-    Sketch_tc.Placement = FreeCAD.Placement(Vector(0,0,height),FreeCAD.Rotation(Vector(0,0,0),0))
-    doc.getObject('Sketch_tc').addGeometry(Part.Circle(App.Vector(0,0,0),App.Vector(0,0,1),bigradius),False)
+    Sketch_tc.Placement = FreeCAD.Placement(Vector(0,0,cone_height_mm),FreeCAD.Rotation(Vector(0,0,0),0))
+    doc.getObject('Sketch_tc').addGeometry(Part.Circle(App.Vector(0,0,0),App.Vector(0,0,1),cone_bigradius_mm),False)
     # loft both circles
     Loft = doc.getObject('Body').newObject('PartDesign::AdditiveLoft','Loft')
     Loft.Profile = doc.getObject('Sketch_bc')
     Loft.Sections = [ doc.getObject('Sketch_tc'),  ]
     doc.recompute()
     # simple copy
-    obj = doc.addObject('Part::Feature','cone_template')
+    obj = doc.addObject('Part::Feature',name)
     obj.Shape = Loft.Shape
-    obj.Label = 'cone_template'
+    obj.Label = name
     return obj
 
 
-#__shape = Part.getShape(App.getDocument('Bigbrick_generated').getObject('Loft'),'',needSubElement=False,refine=False)
-#>>> App.ActiveDocument.addObject('Part::Feature','Loft').Shape=__shape
-#>>> App.ActiveDocument.ActiveObject.Label=App.getDocument('Bigbrick_generated').getObject('Loft').Label
-
-# name a brick or plate
 def name_a_bigbrick(studs_x, studs_y, plate_z):
-    #
+    # TODO
     # Name a brick, plick or plate using the number of studs
     # thickness: 1 = plate, 2 = plick, 3 = brick
     # name plate/plick/brick is followed by
@@ -141,6 +148,7 @@ def name_a_bigbrick(studs_x, studs_y, plate_z):
         name = 'xplate_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(plate_z)
     bigbricks[name] = (studs_x, studs_y, plate_z)
     return name
+
 
 def create_brick_hull(brick_name):
     # create the hull without studs and without rings
@@ -268,15 +276,15 @@ def make_bigbrick(studs_x, studs_y, plate_z):
     if studs_y < studs_x:
         print('ERROR: make_brick(): studs_y (', studs_y, ') cannot be smaller than studs_x (', studs_x, ')')
         return
-    # name the brick
+    # name the bigbrick
     brick_name = name_a_bigbrick(studs_x, studs_y, plate_z)
-    # compound list will contain: the hull, the studs, the rings
+    # compound list will contain: the hull, the studs, the cones, the rings
     compound_list = []
     compound_list.append(create_brick_hull(brick_name))
     compound_list += add_brick_studs(brick_name)
     compound_list += add_brick_cones(brick_name)
     compound_list += add_brick_rings(brick_name)
-    # brick is finished, so create a compound object with the name of the brick
+    # bigbrick is finished, so create a compound object with the name of the bigbrick
     obj = doc.addObject("Part::Compound", brick_name)
     obj.Links = compound_list
     # Put it next to the previous objects (instead of all at 0,0)
@@ -305,12 +313,9 @@ def make_bigbrick(studs_x, studs_y, plate_z):
 doc = FreeCAD.newDocument("Bigbrick generated")
 obj = doc.addObject("PartDesign::Body", "Body")
 
-# creating the studring template
+# creating the studring template and cone template
 studring_template = make_studring_template("studring_template")
-studring_template.ViewObject.hide()
-
-# creating the cone template
-cone_template = make_cone(6,14,9)
+cone_template = make_cone_template("cone_template")
 
 ### Example: to create single bricks
 ### make_brick(width_in_studs, length_in_studs, height_in_plates)
