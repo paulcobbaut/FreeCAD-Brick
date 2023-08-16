@@ -4,9 +4,9 @@ The goal is to make Duplo-compatible bricks for use in 3D printer
 The script generates .stl files in a directory.
 """
 # Dimensions for stud rings
-studring_radius_mm	= 4.950		# Duplo official is 4.800
-studring_height_mm	= 3.400		# Duplo official is 3.200
-studring_wall_mm	= 2.000		# ???
+studring_radius_mm	= 4.800		# Was 4.950 before 2023-08-10, Duplo official is 4.800
+studring_height_mm	= 4.000		# Was 3.400 before 2023-08-10, Duplo official is 3.200
+studring_wall_mm	= 1.200		# Was 2.000 before 2023-08-10
 studring_center_spacing_mm	= 16.000
 
 # Dimensions for bigbricks
@@ -22,8 +22,8 @@ bigwall_thickness_mm	= 3.000
 bigtop_thickness_mm     = 2.000		# the 'ceiling' of a brick is thinner than the sides
 
 # Dimensions underside rings
-ring_radius_outer_mm	= 6.500
-ring_radius_inner_mm	= 5.000
+ring_radius_outer_mm	= 6.750     # was 6.500 before 2023-08-10
+ring_radius_inner_mm	= 5.300     # was 5.000 before 2023-08-10
 
 # Dictionary of bricks generated; name:(studs_x, studs_y, plate_z) --> (width, length, height)
 bigbricks = {}
@@ -32,7 +32,7 @@ bigbricks = {}
 offset = 0
 
 # The directory to export the .stl files to
-export_directory = "/home/paul/FreeCAD/generated_bricks/"
+export_directory = "/home/paul/FreeCAD_generated/"
 
 import FreeCAD
 from FreeCAD import Base, Vector
@@ -76,28 +76,38 @@ def make_studring_template(name):
     fillet = doc.addObject("Part::Fillet",name)
     fillet.Base = studring
     edges = []
-    edges.append((3,0.30,0.30))
-    edges.append((5,0.30,0.30))
+    edges.append((3,0.35,0.35))
+    edges.append((5,0.35,0.35))
     fillet.Edges = edges
     doc.recompute()
     return fillet
 
-def make_cone():
+def make_cone(smallradius, bigradius, height):
     # sketch for bottom circle
     Sketch_bc = doc.getObject('Body').newObject('Sketcher::SketchObject', 'Sketch_bc')
     Sketch_bc.Support = [(doc.getObject('XY_Plane'),'')]
     #Sketch_bc.Placement = FreeCAD.Placement(Vector(0,0,0),FreeCAD.Rotation(Vector(0,0,0),0))
-    doc.getObject('Sketch_bc').addGeometry(Part.Circle(App.Vector(0,0,0),App.Vector(0,0,1),30),False)
+    doc.getObject('Sketch_bc').addGeometry(Part.Circle(App.Vector(0,0,0),App.Vector(0,0,1),smallradius),False)
     # sketch for top circle
     Sketch_tc = doc.getObject('Body').newObject('Sketcher::SketchObject', 'Sketch_tc')
     Sketch_tc.Support = [(doc.getObject('XY_Plane'),'')]
-    Sketch_tc.Placement = FreeCAD.Placement(Vector(0,0,40),FreeCAD.Rotation(Vector(0,0,0),0))
-    doc.getObject('Sketch_tc').addGeometry(Part.Circle(App.Vector(0,0,0),App.Vector(0,0,1),50),False)
+    Sketch_tc.Placement = FreeCAD.Placement(Vector(0,0,height),FreeCAD.Rotation(Vector(0,0,0),0))
+    doc.getObject('Sketch_tc').addGeometry(Part.Circle(App.Vector(0,0,0),App.Vector(0,0,1),bigradius),False)
     # loft both circles
     Loft = doc.getObject('Body').newObject('PartDesign::AdditiveLoft','Loft')
     Loft.Profile = doc.getObject('Sketch_bc')
     Loft.Sections = [ doc.getObject('Sketch_tc'),  ]
+    doc.recompute()
+    # simple copy
+    obj = doc.addObject('Part::Feature','cone_template')
+    obj.Shape = Loft.Shape
+    obj.Label = 'cone_template'
+    return obj
 
+
+#__shape = Part.getShape(App.getDocument('Bigbrick_generated').getObject('Loft'),'',needSubElement=False,refine=False)
+#>>> App.ActiveDocument.addObject('Part::Feature','Loft').Shape=__shape
+#>>> App.ActiveDocument.ActiveObject.Label=App.getDocument('Bigbrick_generated').getObject('Loft').Label
 
 # name a brick or plate
 def name_a_bigbrick(studs_x, studs_y, plate_z):
@@ -179,6 +189,27 @@ def add_brick_studs(brick_name):
     return compound_list
 
 
+def add_brick_cones(brick_name):
+    # Add the cones below the 'ceiling' of the bigbrick
+    # the sole purpose of this is easier 3D printing
+    # create the cones and append each one to a compound_list
+    compound_list=[]
+    x = bigbricks[brick_name][0]
+    y = bigbricks[brick_name][1]
+    z = bigbricks[brick_name][2]
+    height = z * bigplate_height_mm - 9 - bigtop_thickness_mm
+    for i in range(int(x - 1)):
+        for j in range(int(y - 1)):
+            stud = doc.addObject('Part::Feature','cone_template')
+            stud.Shape = doc.cone_template.Shape
+            stud.Label = "cone_" + brick_name + '_' + str(i) + '_' + str(j)
+            xpos = (bigbrick_width_mm + gap_mm) * (i + 1) - (gap_mm/2)
+            ypos = (bigbrick_width_mm + gap_mm) * (j + 1) - (gap_mm/2)
+            stud.Placement = FreeCAD.Placement(Vector(xpos, ypos, height), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
+            compound_list.append(stud)
+    return compound_list
+
+
 def add_brick_rings(brick_name):
     # Add the rings on the bottom of the brick
     compound_list = []
@@ -243,6 +274,7 @@ def make_bigbrick(studs_x, studs_y, plate_z):
     compound_list = []
     compound_list.append(create_brick_hull(brick_name))
     compound_list += add_brick_studs(brick_name)
+    compound_list += add_brick_cones(brick_name)
     compound_list += add_brick_rings(brick_name)
     # brick is finished, so create a compound object with the name of the brick
     obj = doc.addObject("Part::Compound", brick_name)
@@ -277,21 +309,33 @@ obj = doc.addObject("PartDesign::Body", "Body")
 studring_template = make_studring_template("studring_template")
 studring_template.ViewObject.hide()
 
+# creating the cone template
+cone_template = make_cone(6,14,9)
 
 ### Example: to create single bricks
 ### make_brick(width_in_studs, length_in_studs, height_in_plates)
 #make_brick(2, 4, 3) # creates the common 2x4 brick
 #make_brick(2, 6, 1) # creates a 2x6 plate
 #make_brick(4, 4, 2) # creates a 4x4 plick
-make_bigbrick(2, 4, 3)
+make_bigbrick(2, 3, 2)
+#make_bigbrick(2, 3, 2)
+#make_bigbrick(2, 4, 2)
+#make_bigbrick(2, 5, 2)
+#make_bigbrick(2, 6, 2)
+#make_bigbrick(2, 7, 2)
+#make_bigbrick(2, 8, 2)
+#make_bigbrick(2, 9, 2)
 
-#make_cone()
 
-# removing studring template
+# removing templates
 doc.removeObject("studring_template")
 doc.removeObject("studring")
 doc.removeObject("outer_studring_template")
 doc.removeObject("inner_studring_template")
+doc.removeObject("cone_template")
+doc.removeObject("Loft")
+doc.removeObject("Sketch_bc")
+doc.removeObject("Sketch_tc")
 
 # show in GUI`
 doc.recompute()
