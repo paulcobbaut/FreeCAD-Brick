@@ -42,12 +42,17 @@ offset = 0
 # The directory to export the .stl files to
 export_directory = "/home/paul/FreeCAD_generated/"
 
+# font used for the text strings
+font_file="/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"
+
 import FreeCAD
 from FreeCAD import Base, Vector
 import Part
 import Sketcher
 import Mesh
 import MeshPart
+import Draft
+import math
 
 # create a standard x, y, z box in FreeCAD
 def make_box(name, x, y, z):
@@ -305,6 +310,17 @@ def make_bigbrick(studs_x, studs_y, plate_z):
     #return obj
 
 
+def make_string(stringtext):
+  newstring=Draft.make_shapestring(String=stringtext, FontFile=font_file, Size=7.0, Tracking=0.0)
+  plm=FreeCAD.Placement() 
+  plm.Base=FreeCAD.Vector(0, 0, 0)
+  plm.Rotation.Q=(0.5, -0.5, -0.5, 0.5)
+  newstring.Placement=plm
+  newstring.Support=None
+  Draft.autogroup(newstring)
+  return newstring
+
+
 #########
 # Start #
 #########
@@ -320,16 +336,23 @@ cone_template = make_cone_template("cone_template")
 ### Example: to create single bricks
 ### make_brick(width_in_studs, length_in_studs, height_in_plates)
 #make_brick(2, 4, 3) # creates the common 2x4 brick
-#make_brick(2, 6, 1) # creates a 2x6 plate
-#make_brick(4, 4, 2) # creates a 4x4 plick
-make_bigbrick(2, 3, 2)
+#make_bigbrick(2, 2, 2)
 #make_bigbrick(2, 3, 2)
-#make_bigbrick(2, 4, 2)
-#make_bigbrick(2, 5, 2)
-#make_bigbrick(2, 6, 2)
-#make_bigbrick(2, 7, 2)
-#make_bigbrick(2, 8, 2)
-#make_bigbrick(2, 9, 2)
+
+test2 = make_string("BOUWEN")
+plm=FreeCAD.Placement()
+plm.Base=FreeCAD.Vector(-2.0, test2.Shape.BoundBox.YLength, 2.40)
+plm.Rotation.Q=(0.5, -0.5, -0.5, 0.5)
+test2.Placement=plm
+
+target_width = int(test2.Shape.BoundBox.YLength)
+print(target_width)
+print(target_width-8)
+print((target_width-8)/16)
+studs_needed = int(math.ceil((target_width-8)/16) + 1)
+print(studs_needed)
+make_bigbrick(2, studs_needed, 2)
+
 
 
 # removing templates
