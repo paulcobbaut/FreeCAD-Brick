@@ -6,7 +6,7 @@ The script generates .stl files in a directory.
 # Dimensions for stud rings
 # These are the studs on top of the Duplo-compatible bigbrick
 studring_radius_mm	= 4.800		# Was 4.950 before 2023-08-10, Duplo official is 4.800
-studring_height_mm	= 4.000		# Was 3.400 before 2023-08-10, Duplo official is 3.200
+studring_height_mm	= 4.400		# Was 3.400 before 2023-08-10, Duplo official is 3.200
 studring_wall_mm	= 1.200		# Was 2.000 before 2023-08-10
 studring_center_spacing_mm	= 16.000
 
@@ -24,8 +24,8 @@ bigtop_thickness_mm     = 2.000		# the 'ceiling' of a brick is thinner than the 
 
 # Dimensions underside rings
 # These are the cylinders center on the underside of bigbricks
-ring_radius_outer_mm	= 6.750     # was 6.500 before 2023-08-10
-ring_radius_inner_mm	= 5.300     # was 5.000 before 2023-08-10
+ring_radius_outer_mm	= 6.700     # was 6.500 before 2023-08-10
+ring_radius_inner_mm	= 5.400     # was 5.000 before 2023-08-10
 
 # Dimensions for underside cones
 # These enable 3D printing of the bigbrick 'ceiling' without supports
@@ -333,26 +333,27 @@ obj = doc.addObject("PartDesign::Body", "Body")
 studring_template = make_studring_template("studring_template")
 cone_template = make_cone_template("cone_template")
 
-### Example: to create single bricks
 ### make_brick(width_in_studs, length_in_studs, height_in_plates)
 #make_brick(2, 4, 3) # creates the common 2x4 brick
-#make_bigbrick(2, 2, 2)
-#make_bigbrick(2, 3, 2)
 
-test2 = make_string("BOUWEN")
-plm=FreeCAD.Placement()
-plm.Base=FreeCAD.Vector(-2.0, test2.Shape.BoundBox.YLength, 2.40)
-plm.Rotation.Q=(0.5, -0.5, -0.5, 0.5)
-test2.Placement=plm
+mystring = make_string("Test42")
+string_width = float(mystring.Shape.BoundBox.YLength)
+studs_needed = int(math.ceil((string_width-8)/16) + 1)
+brick_width = convert_studs_to_mm(studs_needed)
 
-target_width = int(test2.Shape.BoundBox.YLength)
-print(target_width)
-print(target_width-8)
-print((target_width-8)/16)
-studs_needed = int(math.ceil((target_width-8)/16) + 1)
-print(studs_needed)
+difference = brick_width - string_width
+
+print("string_width = " + str(string_width))
+print("studs_needed = " + str(studs_needed))
+print("brick_width  = " + str(brick_width))
+print("Difference   = " + str(difference))
+
 make_bigbrick(2, studs_needed, 2)
 
+plm=FreeCAD.Placement()
+plm.Base=FreeCAD.Vector(-2.0, brick_width - difference/2 + 1.56418, 2.40)
+plm.Rotation.Q=(0.5, -0.5, -0.5, 0.5)
+mystring.Placement=plm
 
 
 # removing templates
