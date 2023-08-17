@@ -336,24 +336,50 @@ cone_template = make_cone_template("cone_template")
 ### make_brick(width_in_studs, length_in_studs, height_in_plates)
 #make_brick(2, 4, 3) # creates the common 2x4 brick
 
-mystring = make_string("Test42")
+mystring = make_string("TEST")
+
+# calculate Y position shapestring
 string_width = float(mystring.Shape.BoundBox.YLength)
 studs_needed = int(math.ceil((string_width-8)/16) + 1)
 brick_width = convert_studs_to_mm(studs_needed)
-
 difference = brick_width - string_width
-
-print("string_width = " + str(string_width))
-print("studs_needed = " + str(studs_needed))
-print("brick_width  = " + str(brick_width))
-print("Difference   = " + str(difference))
+string_offset_y = brick_width - difference/2 + 1.56418
 
 make_bigbrick(2, studs_needed, 2)
 
+# place the shapestring
 plm=FreeCAD.Placement()
-plm.Base=FreeCAD.Vector(-2.0, brick_width - difference/2 + 1.56418, 2.40)
+plm.Base=FreeCAD.Vector(0, string_offset_y, 2.40)
 plm.Rotation.Q=(0.5, -0.5, -0.5, 0.5)
 mystring.Placement=plm
+
+# pad the shapestring
+Extrude = doc.addObject('Part::Extrusion','Extrude')
+f = doc.getObject('Extrude')
+f.Base = mystring
+f.DirMode = "Normal"
+f.DirLink = None
+f.LengthFwd = 0.30
+f.LengthRev = 0
+f.Solid = False
+f.Reversed = False
+f.Symmetric = False
+f.TaperAngle = 0
+f.TaperAngleRev = 0
+
+# chamfer the first letter T
+Chamfer = doc.addObject("Part::Chamfer","Chamfer")
+Chamfer.Base = Extrude
+__fillets__ = []
+__fillets__.append((4,0.29,0.29))
+__fillets__.append((7,0.29,0.29))
+__fillets__.append((10,0.29,0.29))
+__fillets__.append((13,0.29,0.29))
+__fillets__.append((16,0.29,0.29))
+__fillets__.append((19,0.29,0.29))
+__fillets__.append((22,0.29,0.29))
+__fillets__.append((24,0.29,0.29))
+FreeCAD.ActiveDocument.Chamfer.Edges = __fillets__
 
 
 # removing templates
