@@ -1,22 +1,22 @@
 """
-regular_bigbrick.py -- Paul Cobbaut, 2023-06-01 - 2023-08-16
-The goal is to make Duplo-compatible bricks for use in 3D printer
+regular_bigbrick.py -- Paul Cobbaut, 2023-06-01 - 2023-08-18
+The goal is Duplo-compatible bricks with text for use in 3D printer
 The script generates .stl files in a directory.
 """
 # Dimensions for stud rings
 # These are the studs on top of the Duplo-compatible bigbrick
-studring_radius_mm	= 4.800		# Was 4.950 before 2023-08-10, Duplo official is 4.800
-studring_height_mm	= 4.400		# Was 3.400 before 2023-08-10, Duplo official is 3.200
-studring_wall_mm	= 1.200		# Was 2.000 before 2023-08-10
+studring_radius_mm	    = 4.800
+studring_height_mm	    = 4.400
+studring_wall_mm	    = 1.200
 studring_center_spacing_mm	= 16.000
 
 # Dimensions for bigbricks
-bigplate_height_mm	= 9.600
-bigbrick_height_mm	= 19.200	# bigplate_height_mm * 2
-bigbrick_width_mm	= 15.800	# ???
+bigplate_height_mm	    = 9.600
+bigbrick_height_mm	    = 19.200	# bigplate_height_mm * 2
+bigbrick_width_mm	    = 15.800
 
 # The gap that is added to the width/length for each extra stud
-gap_mm 			= 0.200
+gap_mm 			        = 0.200
 
 # Wall thickness for bricks and plates
 bigwall_thickness_mm	= 3.000
@@ -24,8 +24,8 @@ bigtop_thickness_mm     = 2.000		# the 'ceiling' of a brick is thinner than the 
 
 # Dimensions underside rings
 # These are the cylinders center on the underside of bigbricks
-ring_radius_outer_mm	= 6.700     # was 6.500 before 2023-08-10
-ring_radius_inner_mm	= 5.400     # was 5.000 before 2023-08-10
+ring_radius_outer_mm	= 6.700
+ring_radius_inner_mm	= 5.400
 
 # Dimensions for underside cones
 # These enable 3D printing of the bigbrick 'ceiling' without supports
@@ -43,7 +43,10 @@ offset = 0
 export_directory = "/home/paul/FreeCAD_generated/"
 
 # font used for the text strings
-font_file="/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"
+#font_file="/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"
+#font_file="/usr/share/fonts/truetype/freefont/FreeSerifBold.ttf"
+font_file="/usr/share/fonts/truetype/freefont/FreeMonoBold.ttf"
+
 
 import FreeCAD
 from FreeCAD import Base, Vector
@@ -102,25 +105,24 @@ def make_studring_template(name):
 
 def make_cone_template(name):
     # sketch for bottom circle
-    Sketch_bc = doc.getObject('Body').newObject('Sketcher::SketchObject', 'Sketch_bc')
-    Sketch_bc.Support = [(doc.getObject('XY_Plane'),'')]
-    #Sketch_bc.Placement = FreeCAD.Placement(Vector(0,0,0),FreeCAD.Rotation(Vector(0,0,0),0))
-    doc.getObject('Sketch_bc').addGeometry(Part.Circle(App.Vector(0,0,0),App.Vector(0,0,1),cone_smallradius_mm),False)
+    sketch_bc = doc.getObject('Body').newObject('Sketcher::SketchObject', 'sketch_bc')
+    sketch_bc.Support = [(doc.getObject('XY_Plane'),'')]
+    doc.getObject('sketch_bc').addGeometry(Part.Circle(App.Vector(0,0,0),App.Vector(0,0,1),cone_smallradius_mm),False)
     # sketch for top circle
-    Sketch_tc = doc.getObject('Body').newObject('Sketcher::SketchObject', 'Sketch_tc')
-    Sketch_tc.Support = [(doc.getObject('XY_Plane'),'')]
-    Sketch_tc.Placement = FreeCAD.Placement(Vector(0,0,cone_height_mm),FreeCAD.Rotation(Vector(0,0,0),0))
-    doc.getObject('Sketch_tc').addGeometry(Part.Circle(App.Vector(0,0,0),App.Vector(0,0,1),cone_bigradius_mm),False)
+    sketch_tc = doc.getObject('Body').newObject('Sketcher::SketchObject', 'sketch_tc')
+    sketch_tc.Support = [(doc.getObject('XY_Plane'),'')]
+    sketch_tc.Placement = FreeCAD.Placement(Vector(0,0,cone_height_mm),FreeCAD.Rotation(Vector(0,0,0),0))
+    doc.getObject('sketch_tc').addGeometry(Part.Circle(App.Vector(0,0,0),App.Vector(0,0,1),cone_bigradius_mm),False)
     # loft both circles
-    Loft = doc.getObject('Body').newObject('PartDesign::AdditiveLoft','Loft')
-    Loft.Profile = doc.getObject('Sketch_bc')
-    Loft.Sections = [ doc.getObject('Sketch_tc'),  ]
+    loft = doc.getObject('Body').newObject('PartDesign::AdditiveLoft','loft')
+    loft.Profile = doc.getObject('sketch_bc') 
+    loft.Sections = [ doc.getObject('sketch_tc'),  ]
     doc.recompute()
     # simple copy
-    obj = doc.addObject('Part::Feature',name)
-    obj.Shape = Loft.Shape
-    obj.Label = name
-    return obj
+    cone = doc.addObject('Part::Feature',name)
+    cone.Shape = loft.Shape
+    cone.Label = name
+    return cone
 
 
 def name_a_bigbrick(studs_x, studs_y, plate_z):
@@ -364,8 +366,9 @@ cone_template = make_cone_template("cone_template")
 #mystring = make_string("OP")
 #mystring = make_string("KAN")
 #mystring = make_string("JE")
-#mystring = make_string("LIEVE")
-mystring = make_string("BOUWEN")
+mystring = make_string("LIEVE")
+#mystring = make_string("NIELS")
+#mystring = make_string("BOUWEN")
 
 # removing templates
 doc.removeObject("studring_template")
@@ -373,11 +376,10 @@ doc.removeObject("studring")
 doc.removeObject("outer_studring_template")
 doc.removeObject("inner_studring_template")
 doc.removeObject("cone_template")
-doc.removeObject("Loft")
-doc.removeObject("Sketch_bc")
-doc.removeObject("Sketch_tc")
+doc.removeObject("loft")
+doc.removeObject("sketch_bc")
+doc.removeObject("sketch_tc")
 
 # show in GUI`
 doc.recompute()
 FreeCADGui.ActiveDocument.ActiveView.fitAll()
-
