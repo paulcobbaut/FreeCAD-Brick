@@ -48,6 +48,7 @@ font_file="/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"
 import FreeCAD
 from FreeCAD import Base, Vector
 import Part
+import PartDesign
 import Sketcher
 import Mesh
 import MeshPart
@@ -345,7 +346,7 @@ brick_width = convert_studs_to_mm(studs_needed)
 difference = brick_width - string_width
 string_offset_y = brick_width - difference/2 + 1.56418
 
-make_bigbrick(2, studs_needed, 2)
+####make_bigbrick(2, studs_needed, 2)
 
 # place the shapestring
 plm=FreeCAD.Placement()
@@ -367,6 +368,23 @@ f.Symmetric = False
 f.TaperAngle = 0
 f.TaperAngleRev = 0
 
+doc.recompute()
+
+for edge in doc.Extrude.Shape.Edges:
+    #print("edge:X " + str(edge.BoundBox.XLength) + ' -Y ' + str(edge.BoundBox.YLength) + ' -Z ' + str(edge.BoundBox.ZLength) )
+    p1 = edge.Vertexes[0]
+    p2 = edge.Vertexes[1]
+    if (p1.X == -0.3):
+      print("points:" 
+            + ' x=' + str(round(p1.X,2))
+            + ' y=' + str(round(p1.Y,2))
+            + ' z=' + str(round(p1.Z,2))
+            + ' x=' + str(round(p2.X,2))
+            + ' y=' + str(round(p2.Y,2))
+            + ' z=' + str(round(p2.Z,2))
+            )
+
+
 # chamfer the first letter T
 Chamfer = doc.addObject("Part::Chamfer","Chamfer")
 Chamfer.Base = Extrude
@@ -380,6 +398,16 @@ __fillets__.append((19,0.29,0.29))
 __fillets__.append((22,0.29,0.29))
 __fillets__.append((24,0.29,0.29))
 FreeCAD.ActiveDocument.Chamfer.Edges = __fillets__
+
+
+"""
+edges = []
+i = 1
+for edge in doc.inner_box.Shape.Edges:
+  if (edge.Length) == (box_inner_height):
+    edges.append((i,filletradius,filletradius))
+  i = i + 1
+"""
 
 
 # removing templates
