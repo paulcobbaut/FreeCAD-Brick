@@ -370,6 +370,9 @@ f.TaperAngleRev = 0
 
 doc.recompute()
 
+# build list of edges to chamfer
+chamferlist = []
+i = 1
 for edge in doc.Extrude.Shape.Edges:
     #print("edge:X " + str(edge.BoundBox.XLength) + ' -Y ' + str(edge.BoundBox.YLength) + ' -Z ' + str(edge.BoundBox.ZLength) )
     p1 = edge.Vertexes[0]
@@ -383,31 +386,15 @@ for edge in doc.Extrude.Shape.Edges:
             + ' y=' + str(round(p2.Y,2))
             + ' z=' + str(round(p2.Z,2))
             )
+      chamferlist.append((i,0.29,0.29))
+    i = i + 1
 
-
-# chamfer the first letter T
+# chamfer the letters
 Chamfer = doc.addObject("Part::Chamfer","Chamfer")
 Chamfer.Base = Extrude
-__fillets__ = []
-__fillets__.append((4,0.29,0.29))
-__fillets__.append((7,0.29,0.29))
-__fillets__.append((10,0.29,0.29))
-__fillets__.append((13,0.29,0.29))
-__fillets__.append((16,0.29,0.29))
-__fillets__.append((19,0.29,0.29))
-__fillets__.append((22,0.29,0.29))
-__fillets__.append((24,0.29,0.29))
-FreeCAD.ActiveDocument.Chamfer.Edges = __fillets__
-
-
-"""
-edges = []
-i = 1
-for edge in doc.inner_box.Shape.Edges:
-  if (edge.Length) == (box_inner_height):
-    edges.append((i,filletradius,filletradius))
-  i = i + 1
-"""
+FreeCAD.ActiveDocument.Chamfer.Edges = chamferlist
+Extrude.ViewObject.hide()
+mystring.ViewObject.hide()
 
 
 # removing templates
