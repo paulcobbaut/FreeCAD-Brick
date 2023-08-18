@@ -333,14 +333,6 @@ def make_string(stringtext):
         p1 = edge.Vertexes[0]
         p2 = edge.Vertexes[1]
         if (p1.X == -0.3):
-          print("points:" 
-            + ' x=' + str(round(p1.X,2))
-            + ' y=' + str(round(p1.Y,2))
-            + ' z=' + str(round(p1.Z,2))
-            + ' x=' + str(round(p2.X,2))
-            + ' y=' + str(round(p2.Y,2))
-            + ' z=' + str(round(p2.Z,2))
-            )
           chamferlist.append((i,0.29,0.29))
         i = i + 1
     # chamfer the letters
@@ -369,11 +361,11 @@ cone_template = make_cone_template("cone_template")
 ### make_brick(width_in_studs, length_in_studs, height_in_plates)
 #make_brick(2, 4, 3) # creates the common 2x4 brick
 
-mystring1 = make_string("OP")
-mystring2 = make_string("KAN")
-mystring3 = make_string("JE")
-#mystring = make_string("ABCD")
-#mystring = make_string("ABCD")
+#mystring = make_string("OP")
+#mystring = make_string("KAN")
+#mystring = make_string("JE")
+#mystring = make_string("LIEVE")
+mystring = make_string("BOUWEN")
 
 # removing templates
 doc.removeObject("studring_template")
