@@ -260,28 +260,10 @@ def add_brick_rings(brick_name):
     return compound_list
 
 
-###
-# Make a brick:
-# studs_x 	--> width is in number of studs
-# studs_y 	--> length is in number of studs
-# plate_z 	--> height is in number of standard plate heights
-#
-# Examples:
-# a standard 2x4 plate has (2, 4, 1) as parameters
-# a standard 2x4 brick has (2 ,4, 3) as parameters
-# a very long 1x16 plate has (1, 16, 1) as parameters
-# a very wide 8x12 plick has (8, 12, 2) as parameters
-#
-# Important note:
-# studs_y >= studs_x 
-# a 4x2 brick does not exist!
-# always put the smallest digit first!
-###
 def make_bigbrick(studs_x, studs_y, plate_z):
-    # Exit if studs_y is smaller than studs_x
-    if studs_y < studs_x:
-        print('ERROR: make_brick(): studs_y (', studs_y, ') cannot be smaller than studs_x (', studs_x, ')')
-        return
+    # studs_x 	--> width is in number of studs
+    # studs_y 	--> length is in number of studs
+    # plate_z 	--> height is in number of standard plate heights
     # name the bigbrick
     brick_name = name_a_bigbrick(studs_x, studs_y, plate_z)
     # compound list will contain: the hull, the studs, the cones, the rings
@@ -312,14 +294,64 @@ def make_bigbrick(studs_x, studs_y, plate_z):
 
 
 def make_string(stringtext):
-  newstring=Draft.make_shapestring(String=stringtext, FontFile=font_file, Size=7.0, Tracking=0.0)
-  plm=FreeCAD.Placement() 
-  plm.Base=FreeCAD.Vector(0, 0, 0)
-  plm.Rotation.Q=(0.5, -0.5, -0.5, 0.5)
-  newstring.Placement=plm
-  newstring.Support=None
-  Draft.autogroup(newstring)
-  return newstring
+    # create a shapestring of the received string
+    newstring=Draft.make_shapestring(String=stringtext, FontFile=font_file, Size=7.0, Tracking=0.0)
+    plm=FreeCAD.Placement() 
+    plm.Base=FreeCAD.Vector(0, 0, 0)
+    plm.Rotation.Q=(0.5, -0.5, -0.5, 0.5)
+    newstring.Placement=plm
+    newstring.Support=None
+    Draft.autogroup(newstring)
+    # position the string in front of a Duplo-compatible brick
+    string_width = float(newstring.Shape.BoundBox.YLength)
+    studs_needed = int(math.ceil((string_width-8)/16) + 1)
+    brick_width = convert_studs_to_mm(studs_needed)
+    difference = brick_width - string_width
+    string_offset_y = brick_width - difference/2 + 1.56418 # gap for this font&size
+    plm=FreeCAD.Placement()
+    plm.Base=FreeCAD.Vector(0, string_offset_y, 2.40)
+    plm.Rotation.Q=(0.5, -0.5, -0.5, 0.5)
+    newstring.Placement=plm
+    # pad the shapestring
+    Extrude = doc.addObject('Part::Extrusion','Extrude')
+    f = doc.getObject('Extrude')
+    f.Base = newstring
+    f.DirMode = "Normal"
+    f.DirLink = None
+    f.LengthFwd = 0.30
+    f.LengthRev = 0
+    f.Solid = False
+    f.Reversed = False
+    f.Symmetric = False
+    f.TaperAngle = 0
+    f.TaperAngleRev = 0
+    doc.recompute()
+    # build list of edges to chamfer
+    chamferlist = []
+    i = 1
+    for edge in doc.Extrude.Shape.Edges:
+        p1 = edge.Vertexes[0]
+        p2 = edge.Vertexes[1]
+        if (p1.X == -0.3):
+          print("points:" 
+            + ' x=' + str(round(p1.X,2))
+            + ' y=' + str(round(p1.Y,2))
+            + ' z=' + str(round(p1.Z,2))
+            + ' x=' + str(round(p2.X,2))
+            + ' y=' + str(round(p2.Y,2))
+            + ' z=' + str(round(p2.Z,2))
+            )
+          chamferlist.append((i,0.29,0.29))
+        i = i + 1
+    # chamfer the letters
+    Chamfer = doc.addObject("Part::Chamfer","Chamfer")
+    Chamfer.Base = Extrude
+    FreeCAD.ActiveDocument.Chamfer.Edges = chamferlist
+    # hide objects
+    Extrude.ViewObject.hide()
+    newstring.ViewObject.hide()
+    make_bigbrick(2, studs_needed, 2)
+    return newstring
 
 
 #########
@@ -337,65 +369,11 @@ cone_template = make_cone_template("cone_template")
 ### make_brick(width_in_studs, length_in_studs, height_in_plates)
 #make_brick(2, 4, 3) # creates the common 2x4 brick
 
-mystring = make_string("TEST")
-
-# calculate Y position shapestring
-string_width = float(mystring.Shape.BoundBox.YLength)
-studs_needed = int(math.ceil((string_width-8)/16) + 1)
-brick_width = convert_studs_to_mm(studs_needed)
-difference = brick_width - string_width
-string_offset_y = brick_width - difference/2 + 1.56418
-
-####make_bigbrick(2, studs_needed, 2)
-
-# place the shapestring
-plm=FreeCAD.Placement()
-plm.Base=FreeCAD.Vector(0, string_offset_y, 2.40)
-plm.Rotation.Q=(0.5, -0.5, -0.5, 0.5)
-mystring.Placement=plm
-
-# pad the shapestring
-Extrude = doc.addObject('Part::Extrusion','Extrude')
-f = doc.getObject('Extrude')
-f.Base = mystring
-f.DirMode = "Normal"
-f.DirLink = None
-f.LengthFwd = 0.30
-f.LengthRev = 0
-f.Solid = False
-f.Reversed = False
-f.Symmetric = False
-f.TaperAngle = 0
-f.TaperAngleRev = 0
-
-doc.recompute()
-
-# build list of edges to chamfer
-chamferlist = []
-i = 1
-for edge in doc.Extrude.Shape.Edges:
-    #print("edge:X " + str(edge.BoundBox.XLength) + ' -Y ' + str(edge.BoundBox.YLength) + ' -Z ' + str(edge.BoundBox.ZLength) )
-    p1 = edge.Vertexes[0]
-    p2 = edge.Vertexes[1]
-    if (p1.X == -0.3):
-      print("points:" 
-            + ' x=' + str(round(p1.X,2))
-            + ' y=' + str(round(p1.Y,2))
-            + ' z=' + str(round(p1.Z,2))
-            + ' x=' + str(round(p2.X,2))
-            + ' y=' + str(round(p2.Y,2))
-            + ' z=' + str(round(p2.Z,2))
-            )
-      chamferlist.append((i,0.29,0.29))
-    i = i + 1
-
-# chamfer the letters
-Chamfer = doc.addObject("Part::Chamfer","Chamfer")
-Chamfer.Base = Extrude
-FreeCAD.ActiveDocument.Chamfer.Edges = chamferlist
-Extrude.ViewObject.hide()
-mystring.ViewObject.hide()
-
+mystring1 = make_string("OP")
+mystring2 = make_string("KAN")
+mystring3 = make_string("JE")
+#mystring = make_string("ABCD")
+#mystring = make_string("ABCD")
 
 # removing templates
 doc.removeObject("studring_template")
