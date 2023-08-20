@@ -36,17 +36,17 @@ cone_height_mm          = 9.000
 # Dictionary of bricks generated; name:(studs_x, studs_y, plate_z) --> (width, length, height)
 bigbricks = {}
 
-# Used to visually separate the bricks in FreeCAD GUI
-offset = 0
-
 # The directory to export the .stl files to
 export_directory = "/home/paul/FreeCAD_generated/"
 
 # font used for the text strings
-#font_file="/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"
+# S does not chamfer in this FreeSansBold font
+font_file="/usr/share/fonts/truetype/freefont/FreeSansBold.ttf" 
 #font_file="/usr/share/fonts/truetype/freefont/FreeSerifBold.ttf"
-font_file="/usr/share/fonts/truetype/freefont/FreeMonoBold.ttf"
+#font_file="/usr/share/fonts/truetype/freefont/FreeMonoBold.ttf"
 
+# text to put on bigbrick
+text_string = "ABC"
 
 import FreeCAD
 from FreeCAD import Base, Vector
@@ -123,39 +123,6 @@ def make_cone_template(name):
     cone.Shape = loft.Shape
     cone.Label = name
     return cone
-
-
-def name_a_bigbrick(studs_x, studs_y, plate_z):
-    # TODO
-    # Name a brick, plick or plate using the number of studs
-    # thickness: 1 = plate, 2 = plick, 3 = brick
-    # name plate/plick/brick is followed by
-    # - number of studs X
-    # - number of studs Y
-    # - thickness in plates Z
-    #
-    if plate_z == 1:
-    # plate
-        name = 'plate_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
-    elif plate_z == 2:
-    # plick
-        name = 'plick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
-    elif plate_z % 3 == 0:
-    # brick (all multiples of 3 are bricks)
-        if plate_z == 3:
-            name = 'brick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
-        elif plate_z == 6:
-            name = 'doublebrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
-        elif plate_z == 9:
-            name = 'triplebrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
-        elif plate_z == 12:
-            name = 'quadruplebrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
-        else:
-            name = 'xbrick_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(int(plate_z))
-    else:
-        name = 'xplate_' + str(studs_x) + 'x' + str(studs_y) + 'x' + str(plate_z)
-    bigbricks[name] = (studs_x, studs_y, plate_z)
-    return name
 
 
 def create_brick_hull(brick_name):
@@ -262,51 +229,38 @@ def add_brick_rings(brick_name):
     return compound_list
 
 
-def make_bigbrick(studs_x, studs_y, plate_z):
-    # studs_x 	--> width is in number of studs
-    # studs_y 	--> length is in number of studs
-    # plate_z 	--> height is in number of standard plate heights
-    # name the bigbrick
-    brick_name = name_a_bigbrick(studs_x, studs_y, plate_z)
-    # compound list will contain: the hull, the studs, the cones, the rings
-    compound_list = []
-    compound_list.append(create_brick_hull(brick_name))
-    compound_list += add_brick_studs(brick_name)
-    compound_list += add_brick_cones(brick_name)
-    compound_list += add_brick_rings(brick_name)
-    # bigbrick is finished, so create a compound object with the name of the bigbrick
-    obj = doc.addObject("Part::Compound", brick_name)
+def create_mesh_and_export(string_text, compound_list):
+    obj = doc.addObject("Part::Compound", "CompoundAll")
     obj.Links = compound_list
-    # Put it next to the previous objects (instead of all at 0,0)
-    global offset
-    obj.Placement = FreeCAD.Placement(Vector((bigbrick_width_mm * offset), 0, 0), FreeCAD.Rotation(0,0,0), Vector(0,0,0))
-    offset += studs_x + 1
-    # create mesh from shape (compound)
     doc.recompute()
-    mesh = doc.addObject("Mesh::Feature","Mesh")
-    part = doc.getObject(brick_name)
+    # create mesh from shape (compound)
+    mesh = doc.addObject("Mesh::Feature","Mesh-" + string_text)
+    part = doc.getObject("CompoundAll")
     shape = Part.getShape(part,"")
     mesh.Mesh = MeshPart.meshFromShape(Shape=shape, LinearDeflection=0.1, AngularDeflection=0.0174533, Relative=False)
-    mesh.Label = 'Mesh_' + brick_name
+    mesh.Label = 'Mesh-' + string_text
     # upload .stl file
     export = []
     export.append(mesh)
-    Mesh.export(export, export_directory + brick_name + ".stl")
+    Mesh.export(export, export_directory + string_text + ".stl")
     #return obj
 
 
-def make_string(stringtext):
+def create_brick_text(text_string):
     # create a shapestring of the received string
-    newstring=Draft.make_shapestring(String=stringtext, FontFile=font_file, Size=7.0, Tracking=0.0)
+    newstring=Draft.make_shapestring(String=text_string, FontFile=font_file, Size=7.0, Tracking=0.0)
     plm=FreeCAD.Placement() 
     plm.Base=FreeCAD.Vector(0, 0, 0)
     plm.Rotation.Q=(0.5, -0.5, -0.5, 0.5)
     newstring.Placement=plm
     newstring.Support=None
     Draft.autogroup(newstring)
-    # position the string in front of a Duplo-compatible brick
+    # determine the bigbrick needed for this shapestring
     string_width = float(newstring.Shape.BoundBox.YLength)
     studs_needed = int(math.ceil((string_width-8)/16) + 1)
+    # add bigbrick to global list
+    bigbricks[text_string] = (2, studs_needed, 2)
+    # position the string in front of a Duplo-compatible brick
     brick_width = convert_studs_to_mm(studs_needed)
     difference = brick_width - string_width
     string_offset_y = brick_width - difference/2 + 1.56418 # gap for this font&size
@@ -344,8 +298,7 @@ def make_string(stringtext):
     # hide objects
     Extrude.ViewObject.hide()
     newstring.ViewObject.hide()
-    make_bigbrick(2, studs_needed, 2)
-    return newstring
+    return Chamfer
 
 
 #########
@@ -353,22 +306,19 @@ def make_string(stringtext):
 #########
 
 # create a FreeCAD document and Part Design body
-doc = FreeCAD.newDocument("Bigbrick generated")
-obj = doc.addObject("PartDesign::Body", "Body")
-
+doc                 = FreeCAD.newDocument("Bigbrick generated")
+body                = doc.addObject("PartDesign::Body", "Body")
 # creating the studring template and cone template
-studring_template = make_studring_template("studring_template")
-cone_template = make_cone_template("cone_template")
-
-### make_brick(width_in_studs, length_in_studs, height_in_plates)
-#make_brick(2, 4, 3) # creates the common 2x4 brick
-
-#mystring = make_string("OP")
-#mystring = make_string("KAN")
-#mystring = make_string("JE")
-mystring = make_string("LIEVE")
-#mystring = make_string("NIELS")
-#mystring = make_string("BOUWEN")
+studring_template   = make_studring_template("studring_template")
+cone_template       = make_cone_template("cone_template")
+# create all parts of the bigbrick and add them to a list
+compound_list = []
+compound_list.append(create_brick_text(text_string))
+compound_list.append(create_brick_hull(text_string))
+compound_list += add_brick_studs(text_string)
+compound_list += add_brick_cones(text_string)
+compound_list += add_brick_rings(text_string)
+create_mesh_and_export(text_string, compound_list)
 
 # removing templates
 doc.removeObject("studring_template")
@@ -380,6 +330,6 @@ doc.removeObject("loft")
 doc.removeObject("sketch_bc")
 doc.removeObject("sketch_tc")
 
-# show in GUI`
+# show in GUI
 doc.recompute()
 FreeCADGui.ActiveDocument.ActiveView.fitAll()
