@@ -237,7 +237,7 @@ def create_mesh_and_export(string_text, compound_list):
     mesh = doc.addObject("Mesh::Feature","Mesh-" + string_text)
     part = doc.getObject("CompoundAll")
     shape = Part.getShape(part,"")
-    mesh.Mesh = MeshPart.meshFromShape(Shape=shape, LinearDeflection=0.1, AngularDeflection=0.0174533, Relative=False)
+    mesh.Mesh = MeshPart.meshFromShape(Shape=shape, LinearDeflection=1, AngularDeflection=0.1, Relative=False)
     mesh.Label = 'Mesh-' + string_text
     # upload .stl file
     export = []
