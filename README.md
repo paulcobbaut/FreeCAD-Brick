@@ -1,3 +1,5 @@
+# Everything migrated to https://codeberg.org/paulcobbaut
+
 ## FreeCAD-Brick
 Creating Lego compatible bricks using FreeCAD and Python
 ![cover_20230518_all](https://github.com/paulcobbaut/FreeCAD-Brick/assets/524195/c28b69c3-1377-44be-9013-bbd45a20d1ee)
